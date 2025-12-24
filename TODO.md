@@ -21,11 +21,12 @@
 
 ## Medium Priority Vulnerabilities
 
-### [ ] Fix #3: Insecure File Creation
+### [x] Fix #3: Insecure File Creation
 **Severity:** MEDIUM-HIGH
-**Files:** `internal/cli/create.go`
+**Files:** `internal/cli/create.go`, `test/integration_test.sh`
 **Description:** Use `os.OpenFile()` with `0600` permissions and `O_EXCL` flag for atomic creation.
 **Testing:** Verify new containers have `rw-------` permissions, test atomicity with concurrent creates.
+**Additional fixes:** Removed redundant TOCTOU-vulnerable existence check (now atomic with O_EXCL).
 
 ### [ ] Fix #4: Keyfile Path Injection
 **Severity:** MEDIUM

@@ -64,11 +64,6 @@ func (c *CreateCommand) Run(cmd *cobra.Command, args []string) error {
 	}
 	containerPath = absPath
 
-	// Check if file already exists
-	if _, err := os.Stat(containerPath); err == nil {
-		return fmt.Errorf("file already exists: %s", containerPath)
-	}
-
 	// Get size if not provided
 	if c.size == "" {
 		c.size = ui.PromptString("Container size (e.g., 1G, 10G)")
@@ -137,10 +132,13 @@ func (c *CreateCommand) execute(path string, sizeBytes uint64, auth container.Au
 		}
 	}()
 
-	// Step 1: Create sparse file
+	// Step 1: Create sparse file with secure permissions
 	c.ctx.Logger.Info("Creating sparse file...")
-	file, err := os.Create(path)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
+		if os.IsExist(err) {
+			return fmt.Errorf("file already exists: %s", path)
+		}
 		return fmt.Errorf("failed to create file: %w", err)
 	}
 

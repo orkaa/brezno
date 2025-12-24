@@ -113,11 +113,14 @@ main() {
         print_failure "Container file not created"
     fi
 
-    # Test 2: Verify file permissions (should be 0600 after Fix #3, but for now just check it exists)
-    print_test "Checking container file permissions"
+    # Test 2: Verify file permissions are secure (0600)
+    print_test "Verifying secure file permissions (0600)"
     PERMS=$(stat -c "%a" "$TEST_CONTAINER")
-    echo "Container permissions: $PERMS"
-    print_success "Container permissions checked: $PERMS"
+    if [ "$PERMS" = "600" ]; then
+        print_success "Container has secure permissions: $PERMS (owner-only)"
+    else
+        print_failure "Container has insecure permissions: $PERMS (expected 600)"
+    fi
 
     # Test 3: Mount container with keyfile
     print_test "Mounting container with keyfile"
