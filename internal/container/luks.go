@@ -1,6 +1,7 @@
 package container
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,7 +25,8 @@ func (a *PasswordAuth) Apply(cmd *exec.Cmd) error {
 	if a.Password == nil {
 		return fmt.Errorf("password is nil")
 	}
-	cmd.Stdin = strings.NewReader(string(a.Password.Bytes()) + "\n")
+	// Use bytes.NewBuffer to avoid string conversion that would leave password in memory
+	cmd.Stdin = bytes.NewBuffer(append(a.Password.Bytes(), '\n'))
 	return nil
 }
 
