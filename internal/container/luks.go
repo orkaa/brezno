@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/nace/brezno/internal/system"
 )
@@ -71,20 +70,18 @@ func (m *LUKSManager) Format(path string, auth AuthMethod) error {
 		return err
 	}
 
-	// Run the command
-	var stdout, stderr strings.Builder
+	// Run the command through executor for consistent debug output
 	if _, ok := auth.(*InteractiveAuth); ok {
-		// Interactive auth already set stdin/stdout/stderr
+		// Interactive auth already set stdin/stdout/stderr, run directly
 		err := cmd.Run()
 		if err != nil {
 			return fmt.Errorf("failed to format LUKS container: %w", err)
 		}
 	} else {
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		err := cmd.Run()
+		// Non-interactive: use executor for debug output and sanitization
+		_, err := m.executor.RunCmd(cmd)
 		if err != nil {
-			return fmt.Errorf("failed to format LUKS container: %w\nStderr: %s", err, stderr.String())
+			return fmt.Errorf("failed to format LUKS container: %w", err)
 		}
 	}
 
@@ -104,20 +101,18 @@ func (m *LUKSManager) Open(device, mapperName string, auth AuthMethod) error {
 		return err
 	}
 
-	// Run the command
-	var stdout, stderr strings.Builder
+	// Run the command through executor for consistent debug output
 	if _, ok := auth.(*InteractiveAuth); ok {
-		// Interactive auth already set stdin/stdout/stderr
+		// Interactive auth already set stdin/stdout/stderr, run directly
 		err := cmd.Run()
 		if err != nil {
 			return fmt.Errorf("failed to open LUKS container: %w", err)
 		}
 	} else {
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		err := cmd.Run()
+		// Non-interactive: use executor for debug output and sanitization
+		_, err := m.executor.RunCmd(cmd)
 		if err != nil {
-			return fmt.Errorf("failed to open LUKS container: %w\nStderr: %s", err, stderr.String())
+			return fmt.Errorf("failed to open LUKS container: %w", err)
 		}
 	}
 

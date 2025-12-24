@@ -14,10 +14,10 @@
 
 ### [x] Fix #2: Debug Command Exposure
 **Severity:** HIGH
-**Files:** `internal/system/executor.go`
+**Files:** `internal/system/executor.go`, `internal/container/luks.go`, `cmd/brezno/main.go`
 **Description:** Sanitize debug output to redact sensitive arguments (keyfiles, passwords).
 **Testing:** Run with `--debug` flag, verify sensitive args show as `[REDACTED]`.
-**Note:** Debug flag handling has a pre-existing bug (fixed separately), but sanitization code is in place.
+**Additional fixes:** Fixed debug flag handling bug, standardized all commands to use executor.
 
 ## Medium Priority Vulnerabilities
 
