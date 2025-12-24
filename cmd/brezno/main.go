@@ -2,8 +2,12 @@ package main
 
 import (
 	"os"
+	"sync"
 
 	"github.com/nace/brezno/internal/cli"
+	"github.com/nace/brezno/internal/container"
+	"github.com/nace/brezno/internal/system"
+	"github.com/nace/brezno/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -12,6 +16,9 @@ var (
 	quiet   bool
 	noColor bool
 	debug   bool
+
+	ctx  *cli.GlobalContext
+	once sync.Once
 )
 
 func main() {
@@ -30,7 +37,18 @@ dm-crypt containers similar to VeraCrypt but CLI-only and using
 standard Linux encryption tools (cryptsetup, dm-crypt).`,
 	Version: "0.1.0",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// This runs before any command
+		// Update context components with parsed flag values
+		once.Do(func() {
+			// Recreate executor and logger with parsed flags
+			ctx.Executor = system.NewExecutor(debug)
+			ctx.Logger = ui.NewLogger(verbose, quiet, noColor)
+
+			// Recreate managers with new executor
+			ctx.LoopManager = container.NewLoopManager(ctx.Executor)
+			ctx.LUKSManager = container.NewLUKSManager(ctx.Executor)
+			ctx.MountMgr = container.NewMountManager(ctx.Executor)
+			ctx.Discovery = container.NewDiscovery(ctx.Executor)
+		})
 	},
 }
 
@@ -41,8 +59,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable color output")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Debug mode (show commands)")
 
-	// Create global context
-	ctx := cli.NewGlobalContext(verbose, quiet, noColor, debug)
+	// Create initial context with default values
+	// Will be updated in PersistentPreRun with parsed flag values
+	ctx = cli.NewGlobalContext(false, false, false, false)
 
 	// Register commands
 	rootCmd.AddCommand(cli.NewCreateCommand(ctx))
