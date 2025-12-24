@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -109,11 +110,15 @@ func (c *CreateCommand) Run(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read passphrase: %w", err)
 		}
+		defer password.Zeroize()
+
 		confirmPassword, err := ui.PromptPassword("Confirm passphrase")
 		if err != nil {
 			return fmt.Errorf("failed to read passphrase: %w", err)
 		}
-		if password != confirmPassword {
+		defer confirmPassword.Zeroize()
+
+		if !bytes.Equal(password.Bytes(), confirmPassword.Bytes()) {
 			return fmt.Errorf("passphrases don't match")
 		}
 		auth = &container.PasswordAuth{Password: password}

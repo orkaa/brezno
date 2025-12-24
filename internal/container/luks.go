@@ -16,12 +16,15 @@ type AuthMethod interface {
 
 // PasswordAuth authenticates using a passphrase
 type PasswordAuth struct {
-	Password string
+	Password *system.SecureBytes
 }
 
 // Apply applies password authentication to a command
 func (a *PasswordAuth) Apply(cmd *exec.Cmd) error {
-	cmd.Stdin = strings.NewReader(a.Password + "\n")
+	if a.Password == nil {
+		return fmt.Errorf("password is nil")
+	}
+	cmd.Stdin = strings.NewReader(string(a.Password.Bytes()) + "\n")
 	return nil
 }
 

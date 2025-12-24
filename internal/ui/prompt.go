@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nace/brezno/internal/system"
 	"golang.org/x/term"
 )
 
@@ -30,14 +31,14 @@ func PromptStringWithDefault(prompt, defaultValue string) string {
 }
 
 // PromptPassword prompts for a password without echoing
-func PromptPassword(prompt string) (string, error) {
+func PromptPassword(prompt string) (*system.SecureBytes, error) {
 	fmt.Fprintf(os.Stderr, "%s: ", prompt)
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	fmt.Fprintln(os.Stderr) // New line after password input
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(password), nil
+	return system.NewSecureBytes(password), nil
 }
 
 // PromptConfirm prompts for yes/no confirmation

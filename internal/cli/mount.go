@@ -111,6 +111,7 @@ func (c *MountCommand) Run(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read passphrase: %w", err)
 		}
+		defer password.Zeroize()
 		auth = &container.PasswordAuth{Password: password}
 	}
 
