@@ -102,10 +102,12 @@ func (c *MountCommand) Run(cmd *cobra.Command, args []string) error {
 	// Get authentication method
 	var auth container.AuthMethod
 	if c.keyfile != "" {
-		if _, err := os.Stat(c.keyfile); os.IsNotExist(err) {
-			return fmt.Errorf("keyfile not found: %s", c.keyfile)
+		// Validate and resolve keyfile path
+		resolvedKeyfile, err := system.ValidateKeyfilePath(c.keyfile)
+		if err != nil {
+			return err
 		}
-		auth = &container.KeyfileAuth{KeyfilePath: c.keyfile}
+		auth = &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}
 	} else {
 		password, err := ui.PromptPassword("Enter passphrase")
 		if err != nil {

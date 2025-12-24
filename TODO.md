@@ -28,11 +28,12 @@
 **Testing:** Verify new containers have `rw-------` permissions, test atomicity with concurrent creates.
 **Additional fixes:** Removed redundant TOCTOU-vulnerable existence check (now atomic with O_EXCL).
 
-### [ ] Fix #4: Keyfile Path Injection
+### [x] Fix #4: Keyfile Path Injection
 **Severity:** MEDIUM
 **Files:** `internal/system/pathutil.go` (new), `internal/cli/create.go`, `internal/cli/mount.go`
 **Description:** Validate and resolve keyfile paths, prevent symlink attacks.
 **Testing:** Test with symlinks, directories, non-existent files, insecure permissions.
+**Protections:** Symlink resolution, file type verification, permission warnings, path canonicalization.
 
 ### [ ] Fix #5: TOCTOU Race Condition
 **Severity:** MEDIUM
