@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/nace/brezno/internal/container"
@@ -61,12 +60,7 @@ func (c *MountCommand) Run(cmd *cobra.Command, args []string) error {
 	}
 	containerPath = absPath
 
-	// Check if file exists
-	if _, err := os.Stat(containerPath); os.IsNotExist(err) {
-		return fmt.Errorf("container file not found: %s", containerPath)
-	}
-
-	// Verify it's a LUKS container
+	// Verify it's a LUKS container (will fail if file doesn't exist)
 	isLuks, err := c.ctx.LUKSManager.IsLUKS(containerPath)
 	if err != nil {
 		return fmt.Errorf("failed to check LUKS format: %w", err)

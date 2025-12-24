@@ -35,12 +35,13 @@
 **Testing:** Test with symlinks, directories, non-existent files, insecure permissions.
 **Protections:** Symlink resolution, file type verification, permission warnings, path canonicalization.
 
-### [ ] Fix #5: TOCTOU Race Condition
+### [x] Fix #5: TOCTOU Race Condition
 **Severity:** MEDIUM
-**Files:** `internal/cli/create.go`
-**Description:** Remove redundant file existence check (already fixed by Fix #3's O_EXCL).
-**Dependencies:** Must complete Fix #3 first.
+**Files:** `internal/cli/create.go`, `internal/cli/mount.go`
+**Description:** Remove redundant file existence checks that created race windows.
+**Dependencies:** Fix #3 resolved file creation TOCTOU with O_EXCL.
 **Testing:** Test concurrent file creation attempts.
+**Additional fix:** Removed check-then-use pattern in mount command for complete TOCTOU elimination.
 
 ## Notes
 - All fixes maintain backward compatibility with existing containers
