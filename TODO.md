@@ -12,11 +12,12 @@
 **Description:** Replace string-based password storage with SecureBytes type that zeros memory after use.
 **Testing:** Verify passwords zeroed after use, test container creation/mounting workflows.
 
-### [ ] Fix #2: Debug Command Exposure
+### [x] Fix #2: Debug Command Exposure
 **Severity:** HIGH
 **Files:** `internal/system/executor.go`
 **Description:** Sanitize debug output to redact sensitive arguments (keyfiles, passwords).
 **Testing:** Run with `--debug` flag, verify sensitive args show as `[REDACTED]`.
+**Note:** Debug flag handling has a pre-existing bug (fixed separately), but sanitization code is in place.
 
 ## Medium Priority Vulnerabilities
 
