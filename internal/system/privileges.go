@@ -17,8 +17,3 @@ func RequireRoot() error {
 	}
 	return nil
 }
-
-// GetSudoUser returns the user who invoked sudo
-func GetSudoUser() string {
-	return os.Getenv("SUDO_USER")
-}
