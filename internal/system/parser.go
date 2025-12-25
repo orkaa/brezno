@@ -56,13 +56,3 @@ func ParseDmsetupTable(output string) (string, error) {
 	// Backing device is typically the 7th field (index 6)
 	return fields[6], nil
 }
-
-// ParseLosetupFind extracts loop device from losetup -j output
-// Format: "/dev/loop0: [0042]:12345 (/path/to/file)"
-func ParseLosetupFind(output string) (string, error) {
-	parts := strings.SplitN(output, ":", 2)
-	if len(parts) < 1 {
-		return "", fmt.Errorf("invalid losetup output")
-	}
-	return strings.TrimSpace(parts[0]), nil
-}
