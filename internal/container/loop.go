@@ -84,3 +84,28 @@ func (m *LoopManager) GetAll() (map[string]string, error) {
 
 	return devices, nil
 }
+
+// RefreshSize updates the loop device to recognize the new size of its backing file
+func (m *LoopManager) RefreshSize(device string) error {
+	err := m.executor.Run("losetup", "-c", device)
+	if err != nil {
+		return fmt.Errorf("failed to refresh loop device size %s: %w", device, err)
+	}
+	return nil
+}
+
+// GetDeviceSize gets the size of a loop device in bytes
+func (m *LoopManager) GetDeviceSize(device string) (uint64, error) {
+	output, err := m.executor.RunOutput("blockdev", "--getsize64", device)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get device size: %w", err)
+	}
+
+	var size uint64
+	_, err = fmt.Sscanf(strings.TrimSpace(output), "%d", &size)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse device size: %w", err)
+	}
+
+	return size, nil
+}

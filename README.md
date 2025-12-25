@@ -6,6 +6,7 @@ A CLI utility for managing LUKS2 encrypted containers on Linux, similar to VeraC
 
 - **Create** encrypted containers with LUKS2 encryption
 - **Mount/Unmount** containers with simple commands
+- **Resize** containers to expand storage capacity (online resize)
 - **List** active containers with detailed information
 - **Interactive mode** - prompts for missing parameters
 - **CLI flag mode** - fully scriptable with all parameters as flags
@@ -95,6 +96,29 @@ sudo brezno unmount secrets_img
 sudo brezno unmount /data/secrets.img --force
 ```
 
+### Resize a container
+
+```bash
+# Interactive mode (container must be mounted)
+sudo brezno resize /data/secrets.img
+
+# With flags
+sudo brezno resize /data/secrets.img --size 20G
+
+# With keyfile
+sudo brezno resize /data/secrets.img --size 20G --keyfile ~/.keys/secret.key
+
+# Skip confirmation prompt
+sudo brezno resize /data/secrets.img --size 20G --yes
+```
+
+**Requirements:**
+- Container must be mounted before resizing
+- New size must be larger than current size
+- Sufficient disk space must be available for expansion
+
+**Supported filesystems:** ext4, xfs, btrfs (all support online resize)
+
 ### List active containers
 
 ```bash
@@ -160,6 +184,24 @@ sudo brezno create /data/secure.img --size 10G --keyfile ~/.keys/mykey
 sudo brezno mount /data/secure.img /mnt/secure --keyfile ~/.keys/mykey
 ```
 
+### Resizing containers
+
+```bash
+# Create and mount a container
+sudo brezno create ~/data.img --size 5G
+sudo brezno mount ~/data.img ~/mnt/data
+
+# Use the container and run out of space
+# ... time passes ...
+
+# Resize to 20GB (container must be mounted)
+sudo brezno resize ~/data.img --size 20G
+
+# Continue using with more space available
+# Unmount when done
+sudo brezno unmount ~/data.img
+```
+
 ## Global flags
 
 - `--verbose` - Show detailed progress information
@@ -183,7 +225,6 @@ brezno/
 
 Planned for future releases:
 
-- `brezno resize` - Expand container size
 - `brezno password` - Change container password/keyfile
 - `brezno backup` - Backup LUKS header
 - `brezno verify` - Verify container integrity

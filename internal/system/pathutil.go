@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
 // ValidateKeyfilePath validates and resolves a keyfile path, checking for
@@ -42,4 +43,23 @@ func ValidateKeyfilePath(path string) (string, error) {
 	}
 
 	return resolved, nil
+}
+
+// GetFileSize returns the size of a file in bytes
+func GetFileSize(path string) (uint64, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0, fmt.Errorf("failed to stat file: %w", err)
+	}
+	return uint64(info.Size()), nil
+}
+
+// GetAvailableSpace returns available space in bytes for the filesystem containing path
+func GetAvailableSpace(path string) (uint64, error) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(filepath.Dir(path), &stat); err != nil {
+		return 0, fmt.Errorf("failed to get filesystem stats: %w", err)
+	}
+	// Available blocks * block size
+	return stat.Bavail * uint64(stat.Bsize), nil
 }

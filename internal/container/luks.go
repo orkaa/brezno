@@ -97,3 +97,36 @@ func (m *LUKSManager) Close(mapperName string) error {
 	}
 	return nil
 }
+
+// Resize expands a LUKS container to use all available space on its device
+// The mapper must already be open. This requires authentication.
+func (m *LUKSManager) Resize(mapperName string, auth AuthMethod) error {
+	cmd := exec.Command("cryptsetup", "resize", mapperName)
+	if err := auth.Apply(cmd); err != nil {
+		return err
+	}
+
+	_, err := m.executor.RunCmd(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to resize LUKS container: %w", err)
+	}
+
+	return nil
+}
+
+// GetLUKSSize gets the current size of a LUKS container in bytes
+func (m *LUKSManager) GetLUKSSize(mapperName string) (uint64, error) {
+	mapperDevice := "/dev/mapper/" + mapperName
+	output, err := m.executor.RunOutput("blockdev", "--getsize64", mapperDevice)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get LUKS size: %w", err)
+	}
+
+	var size uint64
+	_, err = fmt.Sscanf(fmt.Sprintf("%s", output), "%d", &size)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse LUKS size: %w", err)
+	}
+
+	return size, nil
+}

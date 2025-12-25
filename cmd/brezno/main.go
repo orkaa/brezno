@@ -68,6 +68,7 @@ func init() {
 	rootCmd.AddCommand(cli.NewMountCommand(ctx))
 	rootCmd.AddCommand(cli.NewUnmountCommand(ctx))
 	rootCmd.AddCommand(cli.NewListCommand(ctx))
+	rootCmd.AddCommand(cli.NewResizeCommand(ctx))
 
 	// Set up help templates
 	rootCmd.SetHelpCommand(&cobra.Command{

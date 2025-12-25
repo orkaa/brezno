@@ -2,7 +2,12 @@
 set -e
 
 # Integration test suite for Brezno
-# Tests the complete workflow: create, mount, use, unmount
+# Main test runner that orchestrates all test modules
+#
+# Usage:
+#   ./integration_test.sh              # Run all tests
+#   ./integration_test.sh basic        # Run only basic tests
+#   ./integration_test.sh resize       # Run only resize tests
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -22,6 +27,9 @@ NC='\033[0m' # No Color
 TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
+
+# Test data (shared across test modules)
+TEST_DATA=""
 
 # Cleanup function
 cleanup() {
@@ -44,7 +52,7 @@ trap cleanup EXIT
 # Print test header
 print_test() {
     TESTS_RUN=$((TESTS_RUN + 1))
-    echo -e "\n${YELLOW}[Test $TESTS_RUN]${NC} $1"
+    echo -e "\n${YELLOW}[TEST]${NC} $1"
 }
 
 # Print success
@@ -79,12 +87,15 @@ check_binary() {
 
 # Main test execution
 main() {
+    local TEST_MODULE="${1:-all}"
+
     echo "========================================"
     echo "  Brezno Integration Test Suite"
     echo "========================================"
     echo ""
     echo "Binary: $BINARY"
     echo "Test directory: $TEST_DIR"
+    echo "Mode: $TEST_MODULE"
     echo ""
 
     check_root
@@ -94,126 +105,33 @@ main() {
     mkdir -p "$TEST_DIR"
     mkdir -p "$TEST_MOUNT"
 
-    # Create test keyfile
-    print_test "Creating test keyfile"
-    dd if=/dev/urandom of="$TEST_KEYFILE" bs=512 count=1 2>/dev/null
-    chmod 600 "$TEST_KEYFILE"
-    if [ -f "$TEST_KEYFILE" ]; then
-        print_success "Keyfile created successfully"
-    else
-        print_failure "Keyfile not created"
-    fi
+    # Run requested test modules
+    case "$TEST_MODULE" in
+        basic)
+            echo -e "${YELLOW}Running basic operations tests only...${NC}"
+            source "$SCRIPT_DIR/tests/test_basic.sh"
+            run_basic_tests
+            ;;
+        resize)
+            echo -e "${YELLOW}Running resize tests only...${NC}"
+            source "$SCRIPT_DIR/tests/test_resize.sh"
+            run_resize_tests
+            ;;
+        all)
+            echo -e "${YELLOW}Running basic operations tests...${NC}"
+            source "$SCRIPT_DIR/tests/test_basic.sh"
+            run_basic_tests
 
-    # Test 1: Create container with keyfile
-    print_test "Creating encrypted container (100MB) with keyfile"
-    "$BINARY" create "$TEST_CONTAINER" --size 100M --keyfile "$TEST_KEYFILE"
-    if [ -f "$TEST_CONTAINER" ]; then
-        print_success "Container created successfully"
-    else
-        print_failure "Container file not created"
-    fi
-
-    # Test 2: Verify file permissions are secure (0600)
-    print_test "Verifying secure file permissions (0600)"
-    PERMS=$(stat -c "%a" "$TEST_CONTAINER")
-    if [ "$PERMS" = "600" ]; then
-        print_success "Container has secure permissions: $PERMS (owner-only)"
-    else
-        print_failure "Container has insecure permissions: $PERMS (expected 600)"
-    fi
-
-    # Test 3: Mount container with keyfile
-    print_test "Mounting container with keyfile"
-    "$BINARY" mount "$TEST_CONTAINER" "$TEST_MOUNT" --keyfile "$TEST_KEYFILE"
-    if mountpoint -q "$TEST_MOUNT"; then
-        print_success "Container mounted successfully"
-    else
-        print_failure "Container not mounted"
-    fi
-
-    # Test 4: Write data to mounted container
-    print_test "Writing test data to mounted container"
-    TEST_DATA="Hello from Brezno integration test!"
-    echo "$TEST_DATA" > "$TEST_MOUNT/test-file.txt"
-    if [ -f "$TEST_MOUNT/test-file.txt" ]; then
-        print_success "Test file written successfully"
-    else
-        print_failure "Failed to write test file"
-    fi
-
-    # Test 5: Read data back
-    print_test "Reading test data from mounted container"
-    READ_DATA=$(cat "$TEST_MOUNT/test-file.txt")
-    if [ "$READ_DATA" = "$TEST_DATA" ]; then
-        print_success "Test data matches: '$READ_DATA'"
-    else
-        print_failure "Test data mismatch. Expected: '$TEST_DATA', Got: '$READ_DATA'"
-    fi
-
-    # Test 6: Unmount container
-    print_test "Unmounting container"
-    "$BINARY" unmount "$TEST_MOUNT"
-    if ! mountpoint -q "$TEST_MOUNT"; then
-        print_success "Container unmounted successfully"
-    else
-        print_failure "Container still mounted"
-    fi
-
-    # Test 7: Re-mount and verify data persistence
-    print_test "Re-mounting container to verify data persistence"
-    "$BINARY" mount "$TEST_CONTAINER" "$TEST_MOUNT" --keyfile "$TEST_KEYFILE"
-    if mountpoint -q "$TEST_MOUNT"; then
-        print_success "Container re-mounted successfully"
-    else
-        print_failure "Failed to re-mount container"
-    fi
-
-    # Test 8: Verify persisted data
-    print_test "Verifying persisted data after remount"
-    if [ -f "$TEST_MOUNT/test-file.txt" ]; then
-        READ_DATA=$(cat "$TEST_MOUNT/test-file.txt")
-        if [ "$READ_DATA" = "$TEST_DATA" ]; then
-            print_success "Persisted data verified: '$READ_DATA'"
-        else
-            print_failure "Persisted data mismatch. Expected: '$TEST_DATA', Got: '$READ_DATA'"
-        fi
-    else
-        print_failure "Test file not found after remount"
-    fi
-
-    # Test 9: Verify keyfile not exposed in any output
-    print_test "Verifying keyfile path not exposed in output"
-    "$BINARY" unmount "$TEST_MOUNT"
-
-    # Run mount command and capture all output
-    OUTPUT=$("$BINARY" mount "$TEST_CONTAINER" "$TEST_MOUNT" --keyfile "$TEST_KEYFILE" 2>&1)
-
-    # Check if keyfile path is NOT exposed in any output
-    if echo "$OUTPUT" | grep -q "$TEST_KEYFILE"; then
-        print_failure "Keyfile path exposed in command output (security issue!)"
-    else
-        print_success "Keyfile path not exposed in command output"
-    fi
-
-    # Test 10: Test wrong keyfile (should fail)
-    print_test "Testing wrong keyfile (should fail)"
-    "$BINARY" unmount "$TEST_MOUNT"
-
-    # Create a different keyfile
-    WRONG_KEYFILE="$TEST_DIR/wrong.key"
-    dd if=/dev/urandom of="$WRONG_KEYFILE" bs=512 count=1 2>/dev/null
-    chmod 600 "$WRONG_KEYFILE"
-
-    set +e  # Don't exit on error for this test
-    "$BINARY" mount "$TEST_CONTAINER" "$TEST_MOUNT" --keyfile "$WRONG_KEYFILE" 2>/dev/null
-    if mountpoint -q "$TEST_MOUNT"; then
-        print_failure "Container mounted with wrong keyfile (security issue!)"
-    else
-        print_success "Wrong keyfile correctly rejected"
-    fi
-    set -e
-
-    # Final cleanup will be handled by trap
+            echo -e "\n${YELLOW}Running resize tests...${NC}"
+            source "$SCRIPT_DIR/tests/test_resize.sh"
+            run_resize_tests
+            ;;
+        *)
+            echo -e "${RED}Unknown test module: $TEST_MODULE${NC}"
+            echo "Usage: $0 [all|basic|resize]"
+            exit 1
+            ;;
+    esac
 
     # Print summary
     echo ""
