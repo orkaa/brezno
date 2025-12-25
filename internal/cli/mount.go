@@ -94,21 +94,13 @@ func (c *MountCommand) Run(cmd *cobra.Command, args []string) error {
 	mountPoint = absMount
 
 	// Get authentication method
-	var auth container.AuthMethod
-	if c.keyfile != "" {
-		// Validate and resolve keyfile path
-		resolvedKeyfile, err := system.ValidateKeyfilePath(c.keyfile)
-		if err != nil {
-			return err
-		}
-		auth = &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}
-	} else {
-		password, err := ui.PromptPassword("Enter passphrase")
-		if err != nil {
-			return fmt.Errorf("failed to read passphrase: %w", err)
-		}
-		defer password.Zeroize()
-		auth = &container.PasswordAuth{Password: password}
+	auth, err := GetAuthMethod(c.keyfile, false) // false = no password confirmation
+	if err != nil {
+		return err
+	}
+	// Ensure password is zeroized when done
+	if pwAuth, ok := auth.(*container.PasswordAuth); ok {
+		defer pwAuth.Password.Zeroize()
 	}
 
 	// Execute mount

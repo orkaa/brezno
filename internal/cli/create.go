@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -92,32 +91,13 @@ func (c *CreateCommand) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get authentication method
-	var auth container.AuthMethod
-	if c.keyfile != "" {
-		// Validate and resolve keyfile path
-		resolvedKeyfile, err := system.ValidateKeyfilePath(c.keyfile)
-		if err != nil {
-			return err
-		}
-		auth = &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}
-	} else {
-		// Prompt for password
-		password, err := ui.PromptPassword("Enter passphrase")
-		if err != nil {
-			return fmt.Errorf("failed to read passphrase: %w", err)
-		}
-		defer password.Zeroize()
-
-		confirmPassword, err := ui.PromptPassword("Confirm passphrase")
-		if err != nil {
-			return fmt.Errorf("failed to read passphrase: %w", err)
-		}
-		defer confirmPassword.Zeroize()
-
-		if !bytes.Equal(password.Bytes(), confirmPassword.Bytes()) {
-			return fmt.Errorf("passphrases don't match")
-		}
-		auth = &container.PasswordAuth{Password: password}
+	auth, err := GetAuthMethod(c.keyfile, true) // true = require password confirmation
+	if err != nil {
+		return err
+	}
+	// Ensure password is zeroized when done
+	if pwAuth, ok := auth.(*container.PasswordAuth); ok {
+		defer pwAuth.Password.Zeroize()
 	}
 
 	// Execute creation

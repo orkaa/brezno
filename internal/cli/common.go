@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/nace/brezno/internal/container"
 	"github.com/nace/brezno/internal/system"
 	"github.com/nace/brezno/internal/ui"
@@ -42,4 +45,40 @@ func (ctx *GlobalContext) CheckDependencies() error {
 		"df",
 	}
 	return ctx.Executor.CheckDependencies(deps)
+}
+
+// GetAuthMethod determines the authentication method based on keyfile flag.
+// If requireConfirmation is true, prompts for password confirmation (for create operations).
+// Caller is responsible for calling Zeroize() on PasswordAuth.Password when done.
+func GetAuthMethod(keyfile string, requireConfirmation bool) (container.AuthMethod, error) {
+	if keyfile != "" {
+		// Validate and resolve keyfile path
+		resolvedKeyfile, err := system.ValidateKeyfilePath(keyfile)
+		if err != nil {
+			return nil, err
+		}
+		return &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}, nil
+	}
+
+	// Prompt for password
+	password, err := ui.PromptPassword("Enter passphrase")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read passphrase: %w", err)
+	}
+
+	if requireConfirmation {
+		confirmPassword, err := ui.PromptPassword("Confirm passphrase")
+		if err != nil {
+			password.Zeroize()
+			return nil, fmt.Errorf("failed to read passphrase: %w", err)
+		}
+		defer confirmPassword.Zeroize()
+
+		if !bytes.Equal(password.Bytes(), confirmPassword.Bytes()) {
+			password.Zeroize()
+			return nil, fmt.Errorf("passphrases don't match")
+		}
+	}
+
+	return &container.PasswordAuth{Password: password}, nil
 }
