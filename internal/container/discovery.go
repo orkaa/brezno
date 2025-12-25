@@ -61,9 +61,9 @@ func (d *Discovery) DiscoverActive() ([]Container, error) {
 		container.LoopDevice = loopDev
 
 		// Get container file from loop device
+		// The kernel always provides absolute paths for loop device backing files
 		if backFile, ok := loopDevices[loopDev]; ok {
-			absPath, _ := filepath.Abs(backFile)
-			container.Path = absPath
+			container.Path = backFile
 		}
 
 		// Get mount information
@@ -88,7 +88,11 @@ func (d *Discovery) FindByPath(path string) (*Container, error) {
 		return nil, err
 	}
 
-	absPath, _ := filepath.Abs(path)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve path: %w", err)
+	}
+
 	for _, c := range containers {
 		if c.Path == absPath {
 			return &c, nil
@@ -121,7 +125,11 @@ func (d *Discovery) FindByMount(mount string) (*Container, error) {
 		return nil, err
 	}
 
-	absMount, _ := filepath.Abs(mount)
+	absMount, err := filepath.Abs(mount)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve mount point: %w", err)
+	}
+
 	for _, c := range containers {
 		if c.MountPoint == absMount {
 			return &c, nil
