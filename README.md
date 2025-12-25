@@ -199,7 +199,7 @@ Planned for future releases:
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License
 
 ## Contributing
 
