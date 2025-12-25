@@ -56,7 +56,10 @@ func (c *UnmountCommand) Run(cmd *cobra.Command, args []string) error {
 	var err error
 
 	// Try as absolute path first
-	absPath, _ := filepath.Abs(identifier)
+	absPath, err := filepath.Abs(identifier)
+	if err != nil {
+		return fmt.Errorf("failed to resolve path: %w", err)
+	}
 	cont, err = c.ctx.Discovery.FindByPath(absPath)
 	if err != nil {
 		return err
