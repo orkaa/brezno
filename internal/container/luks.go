@@ -3,7 +3,6 @@ package container
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
 
 	"github.com/nace/brezno/internal/system"
@@ -40,17 +39,6 @@ func (a *KeyfileAuth) Apply(cmd *exec.Cmd) error {
 	return nil
 }
 
-// InteractiveAuth uses interactive terminal authentication
-type InteractiveAuth struct{}
-
-// Apply applies interactive authentication to a command
-func (a *InteractiveAuth) Apply(cmd *exec.Cmd) error {
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return nil
-}
-
 // LUKSManager handles LUKS operations
 type LUKSManager struct {
 	executor *system.Executor
@@ -70,19 +58,10 @@ func (m *LUKSManager) Format(path string, auth AuthMethod) error {
 		return err
 	}
 
-	// Run the command through executor for consistent debug output
-	if _, ok := auth.(*InteractiveAuth); ok {
-		// Interactive auth already set stdin/stdout/stderr, run directly
-		err := cmd.Run()
-		if err != nil {
-			return fmt.Errorf("failed to format LUKS container: %w", err)
-		}
-	} else {
-		// Non-interactive: use executor for debug output and sanitization
-		_, err := m.executor.RunCmd(cmd)
-		if err != nil {
-			return fmt.Errorf("failed to format LUKS container: %w", err)
-		}
+	// Run the command through executor for debug output and sanitization
+	_, err := m.executor.RunCmd(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to format LUKS container: %w", err)
 	}
 
 	return nil
@@ -101,19 +80,10 @@ func (m *LUKSManager) Open(device, mapperName string, auth AuthMethod) error {
 		return err
 	}
 
-	// Run the command through executor for consistent debug output
-	if _, ok := auth.(*InteractiveAuth); ok {
-		// Interactive auth already set stdin/stdout/stderr, run directly
-		err := cmd.Run()
-		if err != nil {
-			return fmt.Errorf("failed to open LUKS container: %w", err)
-		}
-	} else {
-		// Non-interactive: use executor for debug output and sanitization
-		_, err := m.executor.RunCmd(cmd)
-		if err != nil {
-			return fmt.Errorf("failed to open LUKS container: %w", err)
-		}
+	// Run the command through executor for debug output and sanitization
+	_, err := m.executor.RunCmd(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to open LUKS container: %w", err)
 	}
 
 	return nil
