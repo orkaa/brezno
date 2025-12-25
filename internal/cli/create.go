@@ -192,8 +192,12 @@ func (c *CreateCommand) execute(path string, sizeBytes uint64, auth container.Au
 	cleanup.Clear()
 
 	// Clean up resources manually (close LUKS, detach loop)
-	c.ctx.LUKSManager.Close(mapperName)
-	c.ctx.LoopManager.Detach(loopDev)
+	if err := c.ctx.LUKSManager.Close(mapperName); err != nil {
+		c.ctx.Logger.Warning("Failed to close LUKS container: %v", err)
+	}
+	if err := c.ctx.LoopManager.Detach(loopDev); err != nil {
+		c.ctx.Logger.Warning("Failed to detach loop device: %v", err)
+	}
 
 	c.ctx.Logger.Success("Container created successfully: %s", path)
 	c.ctx.Logger.Info("Size: %s, Filesystem: %s", system.FormatSize(sizeBytes), c.filesystem)
