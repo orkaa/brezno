@@ -11,9 +11,8 @@ import (
 
 // ListCommand handles listing containers
 type ListCommand struct {
-	ctx     *GlobalContext
-	verbose bool
-	json    bool
+	ctx  *GlobalContext
+	json bool
 }
 
 // NewListCommand creates the list command
@@ -27,7 +26,6 @@ func NewListCommand(ctx *GlobalContext) *cobra.Command {
 		RunE:  cmd.Run,
 	}
 
-	cobraCmd.Flags().BoolVarP(&cmd.verbose, "verbose", "v", false, "Verbose output")
 	cobraCmd.Flags().BoolVarP(&cmd.json, "json", "j", false, "JSON output")
 
 	return cobraCmd
@@ -59,7 +57,7 @@ func (c *ListCommand) Run(cmd *cobra.Command, args []string) error {
 		return ui.PrintJSON(containers)
 	}
 
-	if c.verbose {
+	if c.ctx.Logger.Verbose {
 		c.printVerbose(containers)
 	} else {
 		c.printTable(containers)

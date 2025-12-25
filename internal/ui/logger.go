@@ -7,17 +7,17 @@ import (
 
 // Logger provides color-coded logging similar to bash scripts
 type Logger struct {
-	verbose bool
-	quiet   bool
-	noColor bool
+	Verbose bool
+	Quiet   bool
+	NoColor bool
 }
 
 // NewLogger creates a new logger
 func NewLogger(verbose, quiet, noColor bool) *Logger {
 	return &Logger{
-		verbose: verbose,
-		quiet:   quiet,
-		noColor: noColor,
+		Verbose: verbose,
+		Quiet:   quiet,
+		NoColor: noColor,
 	}
 }
 
@@ -32,7 +32,7 @@ const (
 )
 
 func (l *Logger) colorize(color, text string) string {
-	if l.noColor {
+	if l.NoColor {
 		return text
 	}
 	return color + text + colorReset
@@ -40,7 +40,7 @@ func (l *Logger) colorize(color, text string) string {
 
 // Info logs an informational message
 func (l *Logger) Info(format string, args ...interface{}) {
-	if l.quiet {
+	if l.Quiet {
 		return
 	}
 	msg := fmt.Sprintf(format, args...)
@@ -49,7 +49,7 @@ func (l *Logger) Info(format string, args ...interface{}) {
 
 // Success logs a success message
 func (l *Logger) Success(format string, args ...interface{}) {
-	if l.quiet {
+	if l.Quiet {
 		return
 	}
 	msg := fmt.Sprintf(format, args...)
@@ -70,7 +70,7 @@ func (l *Logger) Error(format string, args ...interface{}) {
 
 // Debug logs a debug message (only if verbose is enabled)
 func (l *Logger) Debug(format string, args ...interface{}) {
-	if !l.verbose {
+	if !l.Verbose {
 		return
 	}
 	msg := fmt.Sprintf(format, args...)
