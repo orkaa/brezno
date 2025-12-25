@@ -125,22 +125,6 @@ Brezno creates and manages standard LUKS2 encrypted containers:
 
 This makes Brezno containers **fully portable** - they can be managed with standard LUKS tools even without Brezno.
 
-## Compatibility with bash scripts
-
-Brezno containers are **100% compatible** with the bash scripts in `scripts/`:
-
-```bash
-# Create with Go utility, mount with bash
-sudo ./brezno create /data/test.img --size 1G
-sudo ./scripts/mount-container /data/test.img /mnt/test
-
-# Create with bash, mount with Go utility
-sudo ./scripts/create-container /data/test2.img 1G ext4
-sudo ./brezno mount /data/test2.img /mnt/test2
-```
-
-Both use standard LUKS2 containers, so they're fully interoperable.
-
 ## Examples
 
 ### Quick start
@@ -188,12 +172,11 @@ sudo brezno mount /data/secure.img /mnt/secure --keyfile ~/.keys/mykey
 ```
 brezno/
 ├── cmd/brezno/          # Main entry point
-├── internal/
-│   ├── cli/             # Command implementations
-│   ├── container/       # Container operations (LUKS, loop, mount, discovery)
-│   ├── system/          # System utilities (executor, parser, cleanup)
-│   └── ui/              # User interface (logger, prompts, tables)
-└── scripts/             # Original bash implementation
+└── internal/
+    ├── cli/             # Command implementations
+    ├── container/       # Container operations (LUKS, loop, mount, discovery)
+    ├── system/          # System utilities (executor, parser, cleanup)
+    └── ui/              # User interface (logger, prompts, tables)
 ```
 
 ## Future features
