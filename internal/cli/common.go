@@ -50,8 +50,9 @@ func (ctx *GlobalContext) CheckDependencies() error {
 // GetAuthMethod determines the authentication method based on keyfile flag.
 // If requireConfirmation is true, prompts for password confirmation (for create operations).
 // If passwordStdin is true, reads password from stdin instead of prompting.
+// promptText and confirmText allow customizing the password prompts (empty string = use defaults).
 // Caller is responsible for calling Zeroize() on PasswordAuth.Password when done.
-func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool) (container.AuthMethod, error) {
+func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool, promptText string, confirmText string) (container.AuthMethod, error) {
 	if keyfile != "" {
 		// Validate and resolve keyfile path
 		resolvedKeyfile, err := system.ValidateKeyfilePath(keyfile)
@@ -59,6 +60,14 @@ func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool)
 			return nil, err
 		}
 		return &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}, nil
+	}
+
+	// Use defaults if not specified
+	if promptText == "" {
+		promptText = "Enter passphrase"
+	}
+	if confirmText == "" {
+		confirmText = "Confirm passphrase"
 	}
 
 	var password *system.SecureBytes
@@ -72,7 +81,7 @@ func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool)
 		}
 	} else {
 		// Prompt for password
-		password, err = ui.PromptPassword("Enter passphrase")
+		password, err = ui.PromptPassword(promptText)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read passphrase: %w", err)
 		}
@@ -88,7 +97,7 @@ func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool)
 				return nil, fmt.Errorf("failed to read passphrase confirmation from stdin: %w", err)
 			}
 		} else {
-			confirmPassword, err = ui.PromptPassword("Confirm passphrase")
+			confirmPassword, err = ui.PromptPassword(confirmText)
 			if err != nil {
 				password.Zeroize()
 				return nil, fmt.Errorf("failed to read passphrase: %w", err)

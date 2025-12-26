@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -108,7 +107,7 @@ func (c *PasswordCommand) Run(cmd *cobra.Command, args []string) error {
 
 	// Get current authentication method
 	c.ctx.Logger.Info("Enter current authentication credentials:")
-	currentAuth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin)
+	currentAuth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin, "", "")
 	if err != nil {
 		return fmt.Errorf("failed to get current authentication: %w", err)
 	}
@@ -119,7 +118,7 @@ func (c *PasswordCommand) Run(cmd *cobra.Command, args []string) error {
 
 	// Get new authentication method
 	c.ctx.Logger.Info("Enter new authentication credentials:")
-	newAuth, err := c.getNewAuthMethod()
+	newAuth, err := GetAuthMethod(c.newKeyfile, true, c.passwordStdin, "Enter new passphrase", "Confirm new passphrase")
 	if err != nil {
 		return fmt.Errorf("failed to get new authentication: %w", err)
 	}
@@ -130,57 +129,6 @@ func (c *PasswordCommand) Run(cmd *cobra.Command, args []string) error {
 
 	// Execute password change
 	return c.execute(containerPath, currentAuth, newAuth)
-}
-
-// getNewAuthMethod determines the new authentication method.
-// Similar to GetAuthMethod but always requires password confirmation.
-func (c *PasswordCommand) getNewAuthMethod() (container.AuthMethod, error) {
-	if c.newKeyfile != "" {
-		// Validate and resolve keyfile path
-		resolvedKeyfile, err := system.ValidateKeyfilePath(c.newKeyfile)
-		if err != nil {
-			return nil, err
-		}
-		return &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}, nil
-	}
-
-	var password, confirmPassword *system.SecureBytes
-	var err error
-
-	if c.passwordStdin {
-		// Read new password from stdin
-		password, err = ui.ReadPasswordFromStdin()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read passphrase from stdin: %w", err)
-		}
-
-		// Read confirmation from stdin
-		confirmPassword, err = ui.ReadPasswordFromStdin()
-		if err != nil {
-			password.Zeroize()
-			return nil, fmt.Errorf("failed to read passphrase confirmation from stdin: %w", err)
-		}
-	} else {
-		// Prompt for new password with confirmation
-		password, err = ui.PromptPassword("Enter new passphrase")
-		if err != nil {
-			return nil, fmt.Errorf("failed to read passphrase: %w", err)
-		}
-
-		confirmPassword, err = ui.PromptPassword("Confirm new passphrase")
-		if err != nil {
-			password.Zeroize()
-			return nil, fmt.Errorf("failed to read passphrase: %w", err)
-		}
-	}
-	defer confirmPassword.Zeroize()
-
-	if !bytes.Equal(password.Bytes(), confirmPassword.Bytes()) {
-		password.Zeroize()
-		return nil, fmt.Errorf("passphrases don't match")
-	}
-
-	return &container.PasswordAuth{Password: password}, nil
 }
 
 // execute performs the credential change operation

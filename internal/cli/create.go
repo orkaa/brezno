@@ -93,7 +93,7 @@ func (c *CreateCommand) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get authentication method
-	auth, err := GetAuthMethod(c.keyfile, true, c.passwordStdin) // true = require password confirmation
+	auth, err := GetAuthMethod(c.keyfile, true, c.passwordStdin, "", "") // true = require password confirmation
 	if err != nil {
 		return err
 	}

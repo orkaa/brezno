@@ -96,7 +96,7 @@ func (c *MountCommand) Run(cmd *cobra.Command, args []string) error {
 	mountPoint = absMount
 
 	// Get authentication method
-	auth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin) // false = no password confirmation
+	auth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin, "", "") // false = no password confirmation
 	if err != nil {
 		return err
 	}

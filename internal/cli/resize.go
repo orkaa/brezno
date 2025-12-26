@@ -197,7 +197,7 @@ func (c *ResizeCommand) execute(containerPath string, newSizeBytes uint64) error
 	}
 
 	// Step 9: Get authentication
-	auth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin) // false = no confirmation needed
+	auth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin, "", "") // false = no confirmation needed
 	if err != nil {
 		return err
 	}
