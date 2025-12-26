@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          cryptsetup \
+          util-linux \
+          e2fsprogs \
+          xfsprogs \
+          btrfs-progs
+
+    - name: Build binary
+      run: go build -o brezno ./cmd/brezno
+
+    - name: Run integration tests
+      run: sudo ./test/integration_test.sh
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Build binaries
+      run: |
+        # Build for Linux AMD64
+        GOOS=linux GOARCH=amd64 go build -o brezno-linux-amd64 ./cmd/brezno
+
+        # Build for Linux ARM64
+        GOOS=linux GOARCH=arm64 go build -o brezno-linux-arm64 ./cmd/brezno
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          brezno-linux-amd64
+          brezno-linux-arm64
+        generate_release_notes: true
