@@ -26,7 +26,7 @@ func NewPasswordCommand(ctx *GlobalContext) *cobra.Command {
 
 	cobraCmd := &cobra.Command{
 		Use:   "password <container-path>",
-		Short: "Change LUKS container passphrase or keyfile",
+		Short: "Change LUKS container password or keyfile",
 		Long: `Change the authentication method for a LUKS container.
 
 Supports all transitions:
@@ -41,11 +41,11 @@ The container must be unmounted before changing credentials.`,
 	}
 
 	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "",
-		"Current keyfile path (if not set, will prompt for current passphrase)")
+		"Current keyfile path (if not set, will prompt for current password)")
 	cobraCmd.Flags().StringVar(&cmd.newKeyfile, "new-keyfile", "",
-		"New keyfile path (if not set, will prompt for new passphrase)")
+		"New keyfile path (if not set, will prompt for new password)")
 	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false,
-		"Read passphrases from stdin (for automation)")
+		"Read passwords from stdin (for automation)")
 
 	return cobraCmd
 }
@@ -118,7 +118,7 @@ func (c *PasswordCommand) Run(cmd *cobra.Command, args []string) error {
 
 	// Get new authentication method
 	c.ctx.Logger.Info("Enter new authentication credentials:")
-	newAuth, err := GetAuthMethod(c.newKeyfile, true, c.passwordStdin, "Enter new passphrase", "Confirm new passphrase")
+	newAuth, err := GetAuthMethod(c.newKeyfile, true, c.passwordStdin, "Enter new password", "Confirm new password")
 	if err != nil {
 		return fmt.Errorf("failed to get new authentication: %w", err)
 	}
@@ -138,7 +138,7 @@ func (c *PasswordCommand) execute(path string, currentAuth, newAuth container.Au
 	if err := c.ctx.LUKSManager.ChangeKey(path, currentAuth, newAuth); err != nil {
 		// Provide helpful error messages for common failures
 		if strings.Contains(err.Error(), "No key available") {
-			return fmt.Errorf("incorrect current passphrase or keyfile")
+			return fmt.Errorf("incorrect current password or keyfile")
 		}
 		return fmt.Errorf("failed to change credentials: %w", err)
 	}

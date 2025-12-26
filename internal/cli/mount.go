@@ -30,9 +30,9 @@ func NewMountCommand(ctx *GlobalContext) *cobra.Command {
 		RunE:  cmd.Run,
 	}
 
-	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path (if not set, will prompt for passphrase)")
+	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path (if not set, will prompt for password)")
 	cobraCmd.Flags().BoolVarP(&cmd.readonly, "readonly", "r", false, "Mount as read-only")
-	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read passphrase from stdin (for automation)")
+	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read password from stdin (for automation)")
 
 	return cobraCmd
 }

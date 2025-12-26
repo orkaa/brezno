@@ -35,7 +35,7 @@ func NewResizeCommand(ctx *GlobalContext) *cobra.Command {
 	cobraCmd.Flags().StringVarP(&cmd.size, "size", "s", "", "New container size (e.g., 20G, 500M)")
 	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path for authentication")
 	cobraCmd.Flags().BoolVarP(&cmd.yes, "yes", "y", false, "Skip confirmation prompt")
-	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read passphrase from stdin (for automation)")
+	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read password from stdin (for automation)")
 
 	return cobraCmd
 }

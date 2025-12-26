@@ -22,7 +22,7 @@ Brezno provides similar functionality to VeraCrypt, but with a different approac
 - **Create** encrypted containers with LUKS2 encryption
 - **Mount/Unmount** containers with simple commands
 - **Resize** containers to expand storage capacity (online resize)
-- **Password** management - change passphrases or switch to/from keyfiles
+- **Password** management - change passwords or switch to/from keyfiles
 - **List** active containers with detailed information
 - **Interactive mode** - prompts for missing parameters
 - **CLI flag mode** - fully scriptable with all parameters as flags

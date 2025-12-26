@@ -34,8 +34,8 @@ func NewCreateCommand(ctx *GlobalContext) *cobra.Command {
 
 	cobraCmd.Flags().StringVarP(&cmd.size, "size", "s", "", "Container size (e.g., 1G, 100M)")
 	cobraCmd.Flags().StringVarP(&cmd.filesystem, "filesystem", "f", "ext4", "Filesystem type (ext4, xfs, btrfs)")
-	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path (if not set, will prompt for passphrase)")
-	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read passphrase from stdin (for automation)")
+	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path (if not set, will prompt for password)")
+	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read password from stdin (for automation)")
 
 	return cobraCmd
 }

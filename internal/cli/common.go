@@ -64,10 +64,10 @@ func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool,
 
 	// Use defaults if not specified
 	if promptText == "" {
-		promptText = "Enter passphrase"
+		promptText = "Enter password"
 	}
 	if confirmText == "" {
-		confirmText = "Confirm passphrase"
+		confirmText = "Confirm password"
 	}
 
 	var password *system.SecureBytes
@@ -77,13 +77,13 @@ func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool,
 		// Read password from stdin
 		password, err = ui.ReadPasswordFromStdin()
 		if err != nil {
-			return nil, fmt.Errorf("failed to read passphrase from stdin: %w", err)
+			return nil, fmt.Errorf("failed to read password from stdin: %w", err)
 		}
 	} else {
 		// Prompt for password
 		password, err = ui.PromptPassword(promptText)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read passphrase: %w", err)
+			return nil, fmt.Errorf("failed to read password: %w", err)
 		}
 	}
 
@@ -94,20 +94,20 @@ func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool,
 			confirmPassword, err = ui.ReadPasswordFromStdin()
 			if err != nil {
 				password.Zeroize()
-				return nil, fmt.Errorf("failed to read passphrase confirmation from stdin: %w", err)
+				return nil, fmt.Errorf("failed to read password confirmation from stdin: %w", err)
 			}
 		} else {
 			confirmPassword, err = ui.PromptPassword(confirmText)
 			if err != nil {
 				password.Zeroize()
-				return nil, fmt.Errorf("failed to read passphrase: %w", err)
+				return nil, fmt.Errorf("failed to read password: %w", err)
 			}
 		}
 		defer confirmPassword.Zeroize()
 
 		if !bytes.Equal(password.Bytes(), confirmPassword.Bytes()) {
 			password.Zeroize()
-			return nil, fmt.Errorf("passphrases don't match")
+			return nil, fmt.Errorf("passwords don't match")
 		}
 	}
 

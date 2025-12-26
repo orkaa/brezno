@@ -13,7 +13,7 @@ type AuthMethod interface {
 	Apply(cmd *exec.Cmd) error
 }
 
-// PasswordAuth authenticates using a passphrase
+// PasswordAuth authenticates using a password
 type PasswordAuth struct {
 	Password *system.SecureBytes
 }
@@ -149,8 +149,8 @@ func applyNewAuth(cmd *exec.Cmd, auth AuthMethod) error {
 
 		// For new password via stdin, we need to handle stdin carefully.
 		// cryptsetup luksChangeKey reads:
-		//   1. Current passphrase from stdin (if no --key-file)
-		//   2. New passphrase from stdin (if no new keyfile argument)
+		//   1. Current password from stdin (if no --key-file)
+		//   2. New password from stdin (if no new keyfile argument)
 
 		// Check if current auth already set stdin (password→password case)
 		if cmd.Stdin != nil {
