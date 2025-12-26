@@ -11,6 +11,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// version is set via ldflags during build
+var version = "dev"
+
 var (
 	verbose bool
 	quiet   bool
@@ -34,7 +37,7 @@ var rootCmd = &cobra.Command{
 It provides a simple interface for creating, mounting, and managing
 dm-crypt containers similar to VeraCrypt but CLI-only and using
 standard Linux encryption tools (cryptsetup, dm-crypt).`,
-	Version: "0.1.0",
+	Version: version,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Update context components with parsed flag values
 		once.Do(func() {
