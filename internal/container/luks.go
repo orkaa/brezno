@@ -130,3 +130,74 @@ func (m *LUKSManager) GetLUKSSize(mapperName string) (uint64, error) {
 
 	return size, nil
 }
+
+// applyNewAuth applies new authentication method to a command.
+// This is different from AuthMethod.Apply() because cryptsetup luksChangeKey
+// uses a positional argument for the new keyfile, not a flag.
+func applyNewAuth(cmd *exec.Cmd, auth AuthMethod) error {
+	switch a := auth.(type) {
+	case *KeyfileAuth:
+		// Add new keyfile as positional argument
+		// cryptsetup luksChangeKey <device> [<new key file>]
+		cmd.Args = append(cmd.Args, a.KeyfilePath)
+		return nil
+
+	case *PasswordAuth:
+		if a.Password == nil {
+			return fmt.Errorf("password is nil")
+		}
+
+		// For new password via stdin, we need to handle stdin carefully.
+		// cryptsetup luksChangeKey reads:
+		//   1. Current passphrase from stdin (if no --key-file)
+		//   2. New passphrase from stdin (if no new keyfile argument)
+
+		// Check if current auth already set stdin (password→password case)
+		if cmd.Stdin != nil {
+			// Current auth already set stdin with old password
+			// We need to append new password to the existing stdin buffer
+			existingStdin, ok := cmd.Stdin.(*bytes.Buffer)
+			if !ok {
+				return fmt.Errorf("unexpected stdin type: %T", cmd.Stdin)
+			}
+			existingStdin.Write(a.Password.Bytes())
+			existingStdin.WriteByte('\n')
+		} else {
+			// Current auth is keyfile, only new password goes to stdin
+			cmd.Stdin = bytes.NewBuffer(append(a.Password.Bytes(), '\n'))
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unsupported authentication type: %T", auth)
+	}
+}
+
+// ChangeKey changes the authentication credentials for LUKS key slot 0.
+// Supports all authentication transitions:
+//   - password → password
+//   - password → keyfile
+//   - keyfile → password
+//   - keyfile → keyfile
+func (m *LUKSManager) ChangeKey(device string, currentAuth, newAuth AuthMethod) error {
+	// Build command: cryptsetup luksChangeKey --key-slot 0 <device>
+	cmd := exec.Command("cryptsetup", "luksChangeKey", "--key-slot", "0", device)
+
+	// Apply current authentication
+	if err := currentAuth.Apply(cmd); err != nil {
+		return fmt.Errorf("failed to apply current authentication: %w", err)
+	}
+
+	// Apply new authentication
+	if err := applyNewAuth(cmd, newAuth); err != nil {
+		return fmt.Errorf("failed to apply new authentication: %w", err)
+	}
+
+	// Execute through executor for debug output and sanitization
+	_, err := m.executor.RunCmd(cmd)
+	if err != nil {
+		return fmt.Errorf("cryptsetup luksChangeKey failed: %w", err)
+	}
+
+	return nil
+}

@@ -51,6 +51,15 @@ func (e *Executor) sanitizeCommand(cmd *exec.Cmd) string {
 		}
 	}
 
+	// For luksChangeKey, also redact the positional keyfile argument (if present)
+	// Format: cryptsetup luksChangeKey --key-slot 0 <device> [<new keyfile>]
+	if len(args) >= 2 && args[1] == "luksChangeKey" {
+		// If there are more than the expected args, last one is likely the new keyfile
+		if len(args) > 5 { // cryptsetup luksChangeKey --key-slot 0 device [keyfile]
+			args[len(args)-1] = "[REDACTED]"
+		}
+	}
+
 	result := strings.Join(args, " ")
 
 	// Indicate if stdin is being used (potential password input)
