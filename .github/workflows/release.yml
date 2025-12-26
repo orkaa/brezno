@@ -38,5 +38,5 @@ jobs:
         gh release create ${{ github.ref_name }} \
           brezno-linux-amd64 \
           brezno-linux-arm64 \
-          --title "Release ${{ github.ref_name }}" \
+          --title "brezno ${{ github.ref_name }}" \
           --generate-notes

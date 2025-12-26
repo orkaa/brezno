@@ -47,11 +47,26 @@ sudo dnf install cryptsetup util-linux
 sudo pacman -S cryptsetup util-linux
 ```
 
+### Download pre-built binary
+
+Download the latest release from [GitHub Releases](https://github.com/orkaa/brezno/releases):
+
+```bash
+# Download for your architecture (amd64 or arm64)
+wget https://github.com/orkaa/brezno/releases/latest/download/brezno-linux-amd64
+
+# Make it executable
+chmod +x brezno-linux-amd64
+
+# Install to /usr/local/bin (optional)
+sudo mv brezno-linux-amd64 /usr/local/bin/brezno
+```
+
 ### Build from source
 
 ```bash
 # Clone the repository
-git clone https://github.com/nace/brezno.git
+git clone https://github.com/orkaa/brezno.git
 cd brezno
 
 # Build the binary
