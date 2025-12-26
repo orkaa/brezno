@@ -1,12 +1,28 @@
 # Brezno
 
-A CLI utility for managing LUKS2 encrypted containers on Linux, similar to VeraCrypt but CLI-only.
+**A transparent wrapper around Linux encryption tools for managing LUKS2 encrypted containers.**
+
+Brezno provides similar functionality to VeraCrypt, but with a different approach: instead of implementing its own crypto stack, it's a convenient CLI wrapper around standard Linux utilities (cryptsetup, dm-crypt, losetup).
+
+**Philosophy:** Your encrypted containers should be accessible with standard Linux commands even if this tool disappears tomorrow. Brezno simply makes the common operations easier.
+
+**Tradeoff:** Since dm-crypt and cryptsetup require root privileges, all Brezno commands must be run with `sudo`. This is a fundamental requirement of the underlying Linux encryption stack, not a limitation of this tool.
+
+---
+
+**About the name:** *Brezno* means "abyss" in Slovenian.
+
+> *"In the abyss, no one can read your data."*
+> *(Well, hopefully you can — with standard Linux tools.)*
+
+---
 
 ## Features
 
 - **Create** encrypted containers with LUKS2 encryption
 - **Mount/Unmount** containers with simple commands
 - **Resize** containers to expand storage capacity (online resize)
+- **Password** management - change passphrases or switch to/from keyfiles
 - **List** active containers with detailed information
 - **Interactive mode** - prompts for missing parameters
 - **CLI flag mode** - fully scriptable with all parameters as flags
@@ -119,16 +135,36 @@ sudo brezno resize /data/secrets.img --size 20G --yes
 
 **Supported filesystems:** ext4, xfs, btrfs (all support online resize)
 
+### Change container password
+
+```bash
+# Change password (interactive prompts)
+sudo brezno password /data/secrets.img
+
+# Change from password to keyfile
+sudo brezno password /data/secrets.img --new-keyfile ~/.keys/secret.key
+
+# Change from keyfile to password
+sudo brezno password /data/secrets.img --keyfile ~/.keys/old.key
+
+# Change from one keyfile to another
+sudo brezno password /data/secrets.img --keyfile ~/.keys/old.key --new-keyfile ~/.keys/new.key
+
+# Automated password change (for scripts)
+echo -e "old_password\nnew_password\nnew_password" | sudo brezno password /data/secrets.img --password-stdin
+```
+
+**Requirements:**
+- Container must be unmounted before changing credentials
+- Supports all transitions: password↔password, password↔keyfile, keyfile↔password, keyfile↔keyfile
+
 ### List active containers
 
 ```bash
 # Table format (default)
 sudo brezno list
 
-# Verbose format
-sudo brezno list --verbose
-
-# JSON format
+# JSON format (for scripting)
 sudo brezno list --json
 ```
 
@@ -204,9 +240,8 @@ sudo brezno unmount ~/data.img
 
 ## Global flags
 
-- `--verbose` - Show detailed progress information
-- `--quiet` - Suppress non-error output
-- `--debug` - Show all executed commands
+- `--verbose` / `-v` - Show debug information and executed commands
+- `--quiet` / `-q` - Suppress non-error output
 - `--no-color` - Disable colored output
 
 ## Architecture
@@ -225,10 +260,10 @@ brezno/
 
 Planned for future releases:
 
-- `brezno password` - Change container password/keyfile
 - `brezno backup` - Backup LUKS header
+- `brezno restore` - Restore LUKS header from backup
 - `brezno verify` - Verify container integrity
-- `brezno info` - Show detailed container information
+- `brezno info` - Show detailed container information (LUKS version, cipher, key slots, etc.)
 
 ## Security
 
