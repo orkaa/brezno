@@ -15,9 +15,10 @@ import (
 
 // PasswordCommand handles changing container authentication
 type PasswordCommand struct {
-	ctx        *GlobalContext
-	keyfile    string
-	newKeyfile string
+	ctx           *GlobalContext
+	keyfile       string
+	newKeyfile    string
+	passwordStdin bool
 }
 
 // NewPasswordCommand creates a new password command
@@ -44,6 +45,8 @@ The container must be unmounted before changing credentials.`,
 		"Current keyfile path (if not set, will prompt for current passphrase)")
 	cobraCmd.Flags().StringVar(&cmd.newKeyfile, "new-keyfile", "",
 		"New keyfile path (if not set, will prompt for new passphrase)")
+	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false,
+		"Read passphrases from stdin (for automation)")
 
 	return cobraCmd
 }
@@ -105,7 +108,7 @@ func (c *PasswordCommand) Run(cmd *cobra.Command, args []string) error {
 
 	// Get current authentication method
 	c.ctx.Logger.Info("Enter current authentication credentials:")
-	currentAuth, err := GetAuthMethod(c.keyfile, false)
+	currentAuth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin)
 	if err != nil {
 		return fmt.Errorf("failed to get current authentication: %w", err)
 	}
@@ -141,16 +144,34 @@ func (c *PasswordCommand) getNewAuthMethod() (container.AuthMethod, error) {
 		return &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}, nil
 	}
 
-	// Prompt for new password with confirmation
-	password, err := ui.PromptPassword("Enter new passphrase")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read passphrase: %w", err)
-	}
+	var password, confirmPassword *system.SecureBytes
+	var err error
 
-	confirmPassword, err := ui.PromptPassword("Confirm new passphrase")
-	if err != nil {
-		password.Zeroize()
-		return nil, fmt.Errorf("failed to read passphrase: %w", err)
+	if c.passwordStdin {
+		// Read new password from stdin
+		password, err = ui.ReadPasswordFromStdin()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read passphrase from stdin: %w", err)
+		}
+
+		// Read confirmation from stdin
+		confirmPassword, err = ui.ReadPasswordFromStdin()
+		if err != nil {
+			password.Zeroize()
+			return nil, fmt.Errorf("failed to read passphrase confirmation from stdin: %w", err)
+		}
+	} else {
+		// Prompt for new password with confirmation
+		password, err = ui.PromptPassword("Enter new passphrase")
+		if err != nil {
+			return nil, fmt.Errorf("failed to read passphrase: %w", err)
+		}
+
+		confirmPassword, err = ui.PromptPassword("Confirm new passphrase")
+		if err != nil {
+			password.Zeroize()
+			return nil, fmt.Errorf("failed to read passphrase: %w", err)
+		}
 	}
 	defer confirmPassword.Zeroize()
 

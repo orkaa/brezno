@@ -12,9 +12,10 @@ import (
 
 // MountCommand handles container mounting
 type MountCommand struct {
-	ctx      *GlobalContext
-	keyfile  string
-	readonly bool
+	ctx           *GlobalContext
+	keyfile       string
+	readonly      bool
+	passwordStdin bool
 }
 
 // NewMountCommand creates the mount command
@@ -31,6 +32,7 @@ func NewMountCommand(ctx *GlobalContext) *cobra.Command {
 
 	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path (if not set, will prompt for passphrase)")
 	cobraCmd.Flags().BoolVarP(&cmd.readonly, "readonly", "r", false, "Mount as read-only")
+	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read passphrase from stdin (for automation)")
 
 	return cobraCmd
 }
@@ -94,7 +96,7 @@ func (c *MountCommand) Run(cmd *cobra.Command, args []string) error {
 	mountPoint = absMount
 
 	// Get authentication method
-	auth, err := GetAuthMethod(c.keyfile, false) // false = no password confirmation
+	auth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin) // false = no password confirmation
 	if err != nil {
 		return err
 	}

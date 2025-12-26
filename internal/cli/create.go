@@ -13,10 +13,11 @@ import (
 
 // CreateCommand handles container creation
 type CreateCommand struct {
-	ctx        *GlobalContext
-	size       string
-	filesystem string
-	keyfile    string
+	ctx           *GlobalContext
+	size          string
+	filesystem    string
+	keyfile       string
+	passwordStdin bool
 }
 
 // NewCreateCommand creates the create command
@@ -34,6 +35,7 @@ func NewCreateCommand(ctx *GlobalContext) *cobra.Command {
 	cobraCmd.Flags().StringVarP(&cmd.size, "size", "s", "", "Container size (e.g., 1G, 100M)")
 	cobraCmd.Flags().StringVarP(&cmd.filesystem, "filesystem", "f", "ext4", "Filesystem type (ext4, xfs, btrfs)")
 	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path (if not set, will prompt for passphrase)")
+	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read passphrase from stdin (for automation)")
 
 	return cobraCmd
 }
@@ -91,7 +93,7 @@ func (c *CreateCommand) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get authentication method
-	auth, err := GetAuthMethod(c.keyfile, true) // true = require password confirmation
+	auth, err := GetAuthMethod(c.keyfile, true, c.passwordStdin) // true = require password confirmation
 	if err != nil {
 		return err
 	}

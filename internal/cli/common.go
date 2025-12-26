@@ -49,8 +49,9 @@ func (ctx *GlobalContext) CheckDependencies() error {
 
 // GetAuthMethod determines the authentication method based on keyfile flag.
 // If requireConfirmation is true, prompts for password confirmation (for create operations).
+// If passwordStdin is true, reads password from stdin instead of prompting.
 // Caller is responsible for calling Zeroize() on PasswordAuth.Password when done.
-func GetAuthMethod(keyfile string, requireConfirmation bool) (container.AuthMethod, error) {
+func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool) (container.AuthMethod, error) {
 	if keyfile != "" {
 		// Validate and resolve keyfile path
 		resolvedKeyfile, err := system.ValidateKeyfilePath(keyfile)
@@ -60,17 +61,38 @@ func GetAuthMethod(keyfile string, requireConfirmation bool) (container.AuthMeth
 		return &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}, nil
 	}
 
-	// Prompt for password
-	password, err := ui.PromptPassword("Enter passphrase")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read passphrase: %w", err)
+	var password *system.SecureBytes
+	var err error
+
+	if passwordStdin {
+		// Read password from stdin
+		password, err = ui.ReadPasswordFromStdin()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read passphrase from stdin: %w", err)
+		}
+	} else {
+		// Prompt for password
+		password, err = ui.PromptPassword("Enter passphrase")
+		if err != nil {
+			return nil, fmt.Errorf("failed to read passphrase: %w", err)
+		}
 	}
 
 	if requireConfirmation {
-		confirmPassword, err := ui.PromptPassword("Confirm passphrase")
-		if err != nil {
-			password.Zeroize()
-			return nil, fmt.Errorf("failed to read passphrase: %w", err)
+		var confirmPassword *system.SecureBytes
+		if passwordStdin {
+			// Read confirmation from stdin
+			confirmPassword, err = ui.ReadPasswordFromStdin()
+			if err != nil {
+				password.Zeroize()
+				return nil, fmt.Errorf("failed to read passphrase confirmation from stdin: %w", err)
+			}
+		} else {
+			confirmPassword, err = ui.PromptPassword("Confirm passphrase")
+			if err != nil {
+				password.Zeroize()
+				return nil, fmt.Errorf("failed to read passphrase: %w", err)
+			}
 		}
 		defer confirmPassword.Zeroize()
 

@@ -13,10 +13,11 @@ import (
 
 // ResizeCommand handles container resizing
 type ResizeCommand struct {
-	ctx     *GlobalContext
-	size    string
-	keyfile string
-	yes     bool
+	ctx           *GlobalContext
+	size          string
+	keyfile       string
+	yes           bool
+	passwordStdin bool
 }
 
 // NewResizeCommand creates the resize command
@@ -34,6 +35,7 @@ func NewResizeCommand(ctx *GlobalContext) *cobra.Command {
 	cobraCmd.Flags().StringVarP(&cmd.size, "size", "s", "", "New container size (e.g., 20G, 500M)")
 	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path for authentication")
 	cobraCmd.Flags().BoolVarP(&cmd.yes, "yes", "y", false, "Skip confirmation prompt")
+	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read passphrase from stdin (for automation)")
 
 	return cobraCmd
 }
@@ -195,7 +197,7 @@ func (c *ResizeCommand) execute(containerPath string, newSizeBytes uint64) error
 	}
 
 	// Step 9: Get authentication
-	auth, err := GetAuthMethod(c.keyfile, false) // false = no confirmation needed
+	auth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin) // false = no confirmation needed
 	if err != nil {
 		return err
 	}
