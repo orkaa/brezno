@@ -20,8 +20,8 @@ type GlobalContext struct {
 }
 
 // NewGlobalContext creates a new global context
-func NewGlobalContext(verbose, quiet, noColor, debug bool) *GlobalContext {
-	executor := system.NewExecutor(debug)
+func NewGlobalContext(verbose, quiet, noColor bool) *GlobalContext {
+	executor := system.NewExecutor(verbose)
 	logger := ui.NewLogger(verbose, quiet, noColor)
 
 	return &GlobalContext{

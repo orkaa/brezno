@@ -61,8 +61,10 @@ func (c *MountCommand) Run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid path: %w", err)
 	}
 	containerPath = absPath
+	c.ctx.Logger.Debug("Resolved container path: %s", containerPath)
 
 	// Verify it's a LUKS container (will fail if file doesn't exist)
+	c.ctx.Logger.Debug("Checking if %s is a LUKS container", containerPath)
 	isLuks, err := c.ctx.LUKSManager.IsLUKS(containerPath)
 	if err != nil {
 		return fmt.Errorf("failed to check LUKS format: %w", err)

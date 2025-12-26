@@ -15,7 +15,6 @@ var (
 	verbose bool
 	quiet   bool
 	noColor bool
-	debug   bool
 
 	ctx  *cli.GlobalContext
 	once sync.Once
@@ -40,7 +39,7 @@ standard Linux encryption tools (cryptsetup, dm-crypt).`,
 		// Update context components with parsed flag values
 		once.Do(func() {
 			// Recreate executor and logger with parsed flags
-			ctx.Executor = system.NewExecutor(debug)
+			ctx.Executor = system.NewExecutor(verbose)
 			ctx.Logger = ui.NewLogger(verbose, quiet, noColor)
 
 			// Recreate managers with new executor
@@ -54,14 +53,13 @@ standard Linux encryption tools (cryptsetup, dm-crypt).`,
 
 func init() {
 	// Global flags
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output (show debug info and commands)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (suppress non-error output)")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable color output")
-	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Debug mode (show commands)")
 
 	// Create initial context with default values
 	// Will be updated in PersistentPreRun with parsed flag values
-	ctx = cli.NewGlobalContext(false, false, false, false)
+	ctx = cli.NewGlobalContext(false, false, false)
 
 	// Register commands
 	rootCmd.AddCommand(cli.NewCreateCommand(ctx))

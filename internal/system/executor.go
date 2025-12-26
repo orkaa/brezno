@@ -78,7 +78,7 @@ func (e *Executor) RunCmd(cmd *exec.Cmd) (string, error) {
 	}
 
 	if e.debug {
-		fmt.Printf("[DEBUG] Executing: %s\n", e.sanitizeCommand(cmd))
+		fmt.Fprintf(os.Stderr, "[DEBUG] Executing: %s\n", e.sanitizeCommand(cmd))
 	}
 
 	var stdout, stderr bytes.Buffer
