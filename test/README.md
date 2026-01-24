@@ -9,7 +9,11 @@ test/
 ├── integration_test.sh       # Main test runner
 └── tests/
     ├── test_basic.sh         # Basic operations tests (create, mount, unmount, security)
-    └── test_resize.sh        # Resize functionality tests (can run independently)
+    ├── test_resize.sh        # Resize functionality tests (can run independently)
+    ├── test_password.sh      # Password management tests
+    ├── test_backup.sh        # Backup functionality tests
+    ├── test_restore.sh       # Restore functionality tests
+    └── test_verify.sh       # Verify functionality tests
 ```
 
 ## Running Tests
@@ -29,6 +33,18 @@ sudo ./test/integration_test.sh basic
 
 # Run only resize tests (creates its own container automatically)
 sudo ./test/integration_test.sh resize
+
+# Run only password tests
+sudo ./test/integration_test.sh password
+
+# Run only backup tests
+sudo ./test/integration_test.sh backup
+
+# Run only restore tests
+sudo ./test/integration_test.sh restore
+
+# Run only verify tests
+sudo ./test/integration_test.sh verify
 ```
 
 ## Test Independence
@@ -57,6 +73,36 @@ This allows you to:
 - Verify original data persists after resize
 - Write additional data to expanded space
 - Unmount/remount and verify all data persists
+
+### test_password.sh (25+ tests)
+- Password→password, password→keyfile transitions
+- Keyfile→password, keyfile→keyfile transitions
+- Wrong credentials rejection
+- Mounted container rejection
+- Password mismatch detection
+- Security validation (keyfile path not exposed)
+
+### test_backup.sh (8 tests)
+- Default and custom backup paths
+- Backup file permissions validation
+- Backup integrity verification
+- Overwrite protection with --yes flag
+- Error handling for non-LUKS/non-existent files
+
+### test_restore.sh (9 tests)
+- Basic restore from default and custom paths
+- Mount verification after restore
+- Mounted container rejection
+- Invalid backup rejection
+- Confirmation skip with --yes flag
+- Error handling for missing files
+
+### test_verify.sh (10 tests)
+- Basic header verification on valid LUKS containers
+- Full verification with keyfile authentication
+- Full verification with password authentication
+- JSON output format validation
+- Error cases: non-LUKS files, non-existent files, wrong passwords
 
 ## Adding New Tests
 

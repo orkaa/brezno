@@ -22,7 +22,9 @@ Brezno provides similar functionality to VeraCrypt, but with a different approac
 - **Create** encrypted containers with LUKS2 encryption
 - **Mount/Unmount** containers with simple commands
 - **Resize** containers to expand storage capacity (online resize)
+- **Verify** container integrity and credentials
 - **Password** management - change passwords or switch to/from keyfiles
+- **Backup/Restore** LUKS headers for data recovery
 - **List** active containers with detailed information
 - **Interactive mode** - prompts for missing parameters
 - **CLI flag mode** - fully scriptable with all parameters as flags
@@ -238,6 +240,34 @@ sudo brezno restore /data/secrets.img --yes
 - Container must NOT be mounted during restore
 - No password is required - it only writes encrypted metadata
 
+### Verify container integrity
+
+```bash
+# Basic header verification (no password required)
+sudo brezno verify /data/secrets.img
+
+# Full verification with keyfile
+sudo brezno verify /data/secrets.img --full --keyfile ~/.keys/secret.key
+
+# Full verification with password (interactive)
+sudo brezno verify /data/secrets.img --full
+
+# Full verification with password via stdin (for scripts)
+echo "mypassword" | sudo brezno verify /data/secrets.img --full --password-stdin
+
+# JSON output format
+sudo brezno verify /data/secrets.img --json
+
+# Full verification with JSON output
+sudo brezno verify /data/secrets.img --full --keyfile ~/.keys/secret.key --json
+```
+
+**What gets verified:**
+- **Header verification**: LUKS magic bytes, version, header structure, metadata integrity
+- **Full verification** (`--full`): Tests that credentials are valid without opening the container
+
+**Note:** Header verification works on any LUKS container without authentication. Full verification requires credentials but doesn't mount or modify the container.
+
 ## How it works
 
 Brezno creates and manages standard LUKS2 encrypted containers:
@@ -277,7 +307,6 @@ brezno/
 
 Planned for future releases:
 
-- `brezno verify` - Verify container integrity
 - `brezno info` - Show detailed container information (LUKS version, cipher, key slots, etc.)
 
 ## Security

@@ -44,13 +44,13 @@ Brezno wraps standard Linux tools (cryptsetup, losetup, mount) rather than imple
 brezno/
 ├── cmd/brezno/          # Main entry point
 └── internal/
-    ├── cli/             # Command implementations (create, mount, unmount, resize, list)
+    ├── cli/             # Command implementations (create, mount, unmount, resize, list, verify, backup, restore, password)
     ├── container/       # LUKS, loop device, mount, discovery logic
     ├── system/          # Executor, secure bytes, cleanup, parsers, utilities
     └── ui/              # Logger, prompts, output formatting
 ```
 
-**Total codebase**: ~2,270 lines of Go (very focused and compact)
+**Total codebase**: ~3,150 lines of Go (very focused and compact)
 
 ## Critical Code Patterns
 
@@ -358,8 +358,13 @@ Dependency checks: `GlobalContext.CheckDependencies()`
 ```bash
 test/
 ├── integration_test.sh       # Main test runner
-├── basic_tests.sh             # Core functionality tests
-└── resize_tests.sh            # Resize-specific tests
+├── tests/
+│   ├── test_basic.sh         # Core functionality tests
+│   ├── test_resize.sh        # Resize-specific tests
+│   ├── test_password.sh      # Password management tests
+│   ├── test_backup.sh        # Backup functionality tests
+│   ├── test_restore.sh       # Restore functionality tests
+│   └── test_verify.sh       # Verify functionality tests
 ```
 
 ### Running Tests
@@ -368,8 +373,12 @@ test/
 sudo ./test/integration_test.sh
 
 # Specific test suite
-sudo ./test/integration_test.sh basic_tests
-sudo ./test/integration_test.sh resize_tests
+sudo ./test/integration_test.sh basic
+sudo ./test/integration_test.sh resize
+sudo ./test/integration_test.sh password
+sudo ./test/integration_test.sh backup
+sudo ./test/integration_test.sh restore
+sudo ./test/integration_test.sh verify
 ```
 
 ## Common Pitfalls
@@ -508,10 +517,9 @@ go vet ./...
 
 Features on the roadmap (not yet implemented):
 
-- `brezno verify` - Verify container integrity
 - `brezno info` - Show detailed container information
 
-When implementing these, follow the existing patterns (CleanupStack, SecureBytes, stateless discovery).
+When implementing this, follow the existing patterns (CleanupStack, SecureBytes, stateless discovery).
 
 ---
 
