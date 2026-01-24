@@ -9,6 +9,7 @@ set -e
 #   ./integration_test.sh basic        # Run only basic tests
 #   ./integration_test.sh resize       # Run only resize tests
 #   ./integration_test.sh password     # Run only password tests
+#   ./integration_test.sh backup       # Run only backup tests
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -123,6 +124,11 @@ main() {
             source "$SCRIPT_DIR/tests/test_password.sh"
             run_password_tests
             ;;
+        backup)
+            echo -e "${YELLOW}Running backup tests only...${NC}"
+            source "$SCRIPT_DIR/tests/test_backup.sh"
+            run_backup_tests
+            ;;
         all)
             echo -e "${YELLOW}Running basic operations tests...${NC}"
             source "$SCRIPT_DIR/tests/test_basic.sh"
@@ -135,10 +141,14 @@ main() {
             echo -e "\n${YELLOW}Running password tests...${NC}"
             source "$SCRIPT_DIR/tests/test_password.sh"
             run_password_tests
+
+            echo -e "\n${YELLOW}Running backup tests...${NC}"
+            source "$SCRIPT_DIR/tests/test_backup.sh"
+            run_backup_tests
             ;;
         *)
             echo -e "${RED}Unknown test module: $TEST_MODULE${NC}"
-            echo "Usage: $0 [all|basic|resize|password]"
+            echo "Usage: $0 [all|basic|resize|password|backup]"
             exit 1
             ;;
     esac

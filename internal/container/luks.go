@@ -173,6 +173,16 @@ func applyNewAuth(cmd *exec.Cmd, auth AuthMethod) error {
 	}
 }
 
+// BackupHeader backs up the LUKS header to a file.
+// No authentication is required for header backup.
+func (m *LUKSManager) BackupHeader(path, outputPath string) error {
+	_, err := m.executor.RunOutput("cryptsetup", "luksHeaderBackup", path, "--header-backup-file", outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to backup LUKS header: %w", err)
+	}
+	return nil
+}
+
 // ChangeKey changes the authentication credentials for LUKS key slot 0.
 // Supports all authentication transitions:
 //   - password → password

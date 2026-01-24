@@ -202,6 +202,23 @@ sudo brezno list
 sudo brezno list --json
 ```
 
+### Backup LUKS header
+
+```bash
+# Backup header to default location (<container>.header.bak)
+sudo brezno backup /data/secrets.img
+
+# Backup header to custom location
+sudo brezno backup /data/secrets.img --output /backups/secrets-header.bak
+
+# Skip overwrite confirmation
+sudo brezno backup /data/secrets.img --yes
+```
+
+**Why backup headers?** The LUKS header contains encryption metadata and key slots. If the header is corrupted (e.g., partial overwrite), all data becomes inaccessible even if the container data is intact. A header backup allows recovery in this scenario.
+
+**Note:** No password is required for header backup - it only copies encrypted metadata.
+
 ## How it works
 
 Brezno creates and manages standard LUKS2 encrypted containers:
@@ -241,7 +258,6 @@ brezno/
 
 Planned for future releases:
 
-- `brezno backup` - Backup LUKS header
 - `brezno restore` - Restore LUKS header from backup
 - `brezno verify` - Verify container integrity
 - `brezno info` - Show detailed container information (LUKS version, cipher, key slots, etc.)
