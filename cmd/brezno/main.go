@@ -72,6 +72,7 @@ func init() {
 	rootCmd.AddCommand(cli.NewResizeCommand(ctx))
 	rootCmd.AddCommand(cli.NewPasswordCommand(ctx))
 	rootCmd.AddCommand(cli.NewBackupCommand(ctx))
+	rootCmd.AddCommand(cli.NewRestoreCommand(ctx))
 
 	// Set up help templates
 	rootCmd.SetHelpCommand(&cobra.Command{

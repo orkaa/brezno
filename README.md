@@ -219,6 +219,25 @@ sudo brezno backup /data/secrets.img --yes
 
 **Note:** No password is required for header backup - it only copies encrypted metadata.
 
+### Restore LUKS header
+
+```bash
+# Restore from default backup location (<container>.header.bak)
+sudo brezno restore /data/secrets.img
+
+# Restore from custom backup location
+sudo brezno restore /data/secrets.img --backup /backups/secrets-header.bak
+
+# Skip confirmation (use with caution!)
+sudo brezno restore /data/secrets.img --yes
+```
+
+**Warning:** Restoring the wrong header will make your data permanently inaccessible. Only restore from a backup of the same container.
+
+**Requirements:**
+- Container must NOT be mounted during restore
+- No password is required - it only writes encrypted metadata
+
 ## How it works
 
 Brezno creates and manages standard LUKS2 encrypted containers:
@@ -258,7 +277,6 @@ brezno/
 
 Planned for future releases:
 
-- `brezno restore` - Restore LUKS header from backup
 - `brezno verify` - Verify container integrity
 - `brezno info` - Show detailed container information (LUKS version, cipher, key slots, etc.)
 

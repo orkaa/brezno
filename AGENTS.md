@@ -508,8 +508,6 @@ go vet ./...
 
 Features on the roadmap (not yet implemented):
 
-- `brezno password` - Change container password/keyfile
-- `brezno backup` - Backup LUKS header
 - `brezno verify` - Verify container integrity
 - `brezno info` - Show detailed container information
 

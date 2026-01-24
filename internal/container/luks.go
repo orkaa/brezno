@@ -183,6 +183,17 @@ func (m *LUKSManager) BackupHeader(path, outputPath string) error {
 	return nil
 }
 
+// RestoreHeader restores a LUKS header from a backup file.
+// No authentication is required for header restore.
+// WARNING: Restoring the wrong header makes data permanently inaccessible.
+func (m *LUKSManager) RestoreHeader(path, backupPath string) error {
+	_, err := m.executor.RunOutput("cryptsetup", "luksHeaderRestore", path, "--header-backup-file", backupPath)
+	if err != nil {
+		return fmt.Errorf("failed to restore LUKS header: %w", err)
+	}
+	return nil
+}
+
 // ChangeKey changes the authentication credentials for LUKS key slot 0.
 // Supports all authentication transitions:
 //   - password → password
