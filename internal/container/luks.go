@@ -4,9 +4,22 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/nace/brezno/internal/system"
 )
+
+// LUKSDumpInfo contains metadata from a LUKS container header
+type LUKSDumpInfo struct {
+	Version    string `json:"version"`
+	UUID       string `json:"uuid"`
+	Cipher     string `json:"cipher"`
+	CipherMode string `json:"cipher_mode"`
+	HashSpec   string `json:"hash_spec"`
+	KeySlots   []int  `json:"key_slots"`
+}
 
 // AuthMethod represents a method to authenticate to a LUKS container
 type AuthMethod interface {
@@ -218,6 +231,93 @@ func (m *LUKSManager) ChangeKey(device string, currentAuth, newAuth AuthMethod) 
 	_, err := m.executor.RunCmd(cmd)
 	if err != nil {
 		return fmt.Errorf("cryptsetup luksChangeKey failed: %w", err)
+	}
+
+	return nil
+}
+
+// Dump retrieves metadata from a LUKS container header.
+// No authentication is required - only reads public metadata.
+func (m *LUKSManager) Dump(path string) (*LUKSDumpInfo, error) {
+	output, err := m.executor.RunOutput("cryptsetup", "luksDump", path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read LUKS header: %w", err)
+	}
+
+	return parseLuksDump(string(output))
+}
+
+// parseLuksDump parses the output of cryptsetup luksDump
+func parseLuksDump(output string) (*LUKSDumpInfo, error) {
+	info := &LUKSDumpInfo{}
+	lines := strings.Split(output, "\n")
+
+	// Regular expressions for parsing
+	versionRe := regexp.MustCompile(`^Version:\s+(\d+)`)
+	uuidRe := regexp.MustCompile(`^UUID:\s+(\S+)`)
+	cipherRe := regexp.MustCompile(`^Cipher name:\s+(\S+)`)
+	cipherModeRe := regexp.MustCompile(`^Cipher mode:\s+(\S+)`)
+	hashRe := regexp.MustCompile(`^Hash spec:\s+(\S+)`)
+	// LUKS2 uses "Keyslots:" section, LUKS1 uses "Key Slot N: ENABLED"
+	keySlotEnabledRe := regexp.MustCompile(`^Key Slot (\d+): ENABLED`)
+	// LUKS2 keyslot format: "  N: luks2" at start of line in Keyslots section
+	luks2KeySlotRe := regexp.MustCompile(`^\s+(\d+): luks2`)
+
+	inKeyslots := false
+	for _, line := range lines {
+		line = strings.TrimRight(line, "\r")
+
+		// Check for LUKS2 Keyslots section
+		if strings.HasPrefix(line, "Keyslots:") {
+			inKeyslots = true
+			continue
+		}
+
+		// End of Keyslots section in LUKS2 (next section starts)
+		if inKeyslots && len(line) > 0 && line[0] != ' ' && line[0] != '\t' {
+			inKeyslots = false
+		}
+
+		if matches := versionRe.FindStringSubmatch(line); matches != nil {
+			info.Version = matches[1]
+		} else if matches := uuidRe.FindStringSubmatch(line); matches != nil {
+			info.UUID = matches[1]
+		} else if matches := cipherRe.FindStringSubmatch(line); matches != nil {
+			info.Cipher = matches[1]
+		} else if matches := cipherModeRe.FindStringSubmatch(line); matches != nil {
+			info.CipherMode = matches[1]
+		} else if matches := hashRe.FindStringSubmatch(line); matches != nil {
+			info.HashSpec = matches[1]
+		} else if matches := keySlotEnabledRe.FindStringSubmatch(line); matches != nil {
+			// LUKS1 format
+			slot, _ := strconv.Atoi(matches[1])
+			info.KeySlots = append(info.KeySlots, slot)
+		} else if inKeyslots {
+			if matches := luks2KeySlotRe.FindStringSubmatch(line); matches != nil {
+				slot, _ := strconv.Atoi(matches[1])
+				info.KeySlots = append(info.KeySlots, slot)
+			}
+		}
+	}
+
+	// Validate we got at least some data
+	if info.Version == "" {
+		return nil, fmt.Errorf("failed to parse LUKS header: version not found")
+	}
+
+	return info, nil
+}
+
+// TestPassphrase tests if authentication credentials are valid without opening the container.
+func (m *LUKSManager) TestPassphrase(path string, auth AuthMethod) error {
+	cmd := exec.Command("cryptsetup", "luksOpen", "--test-passphrase", path)
+	if err := auth.Apply(cmd); err != nil {
+		return err
+	}
+
+	_, err := m.executor.RunCmd(cmd)
+	if err != nil {
+		return fmt.Errorf("passphrase verification failed: %w", err)
 	}
 
 	return nil
