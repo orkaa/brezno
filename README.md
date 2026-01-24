@@ -76,6 +76,25 @@ go build -o brezno ./cmd/brezno
 sudo mv brezno /usr/local/bin/
 ```
 
+## Quick Start
+
+```bash
+# Create a 5GB encrypted container
+sudo brezno create ~/secure.img --size 5G
+
+# Mount it
+sudo brezno mount ~/secure.img ~/mnt/secure
+
+# Use it
+echo "secret data" | sudo tee ~/mnt/secure/secret.txt
+
+# List mounted containers
+sudo brezno list
+
+# Unmount
+sudo brezno unmount ~/secure.img
+```
+
 ## Usage
 
 All commands require root privileges (run with `sudo`).
@@ -199,59 +218,6 @@ Brezno creates and manages standard LUKS2 encrypted containers:
 - `/proc/mounts` → find mount points
 
 This makes Brezno containers **fully portable** - they can be managed with standard LUKS tools even without Brezno.
-
-## Examples
-
-### Quick start
-
-```bash
-# Create a 5GB encrypted container
-sudo brezno create ~/secure.img --size 5G
-
-# Mount it
-sudo brezno mount ~/secure.img ~/mnt/secure
-
-# Use it
-echo "secret data" | sudo tee ~/mnt/secure/secret.txt
-
-# List mounted containers
-sudo brezno list
-
-# Unmount
-sudo brezno unmount ~/secure.img
-```
-
-### Using keyfiles
-
-```bash
-# Generate a keyfile
-dd if=/dev/urandom of=~/.keys/mykey bs=1024 count=1
-chmod 600 ~/.keys/mykey
-
-# Create container with keyfile
-sudo brezno create /data/secure.img --size 10G --keyfile ~/.keys/mykey
-
-# Mount with keyfile
-sudo brezno mount /data/secure.img /mnt/secure --keyfile ~/.keys/mykey
-```
-
-### Resizing containers
-
-```bash
-# Create and mount a container
-sudo brezno create ~/data.img --size 5G
-sudo brezno mount ~/data.img ~/mnt/data
-
-# Use the container and run out of space
-# ... time passes ...
-
-# Resize to 20GB (container must be mounted)
-sudo brezno resize ~/data.img --size 20G
-
-# Continue using with more space available
-# Unmount when done
-sudo brezno unmount ~/data.img
-```
 
 ## Global flags
 
