@@ -513,14 +513,6 @@ go fmt ./...
 go vet ./...
 ```
 
-## Future Roadmap
-
-Features on the roadmap (not yet implemented):
-
-- `brezno info` - Show detailed container information
-
-When implementing this, follow the existing patterns (CleanupStack, SecureBytes, stateless discovery).
-
 ---
 
 ## Key Takeaways

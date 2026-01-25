@@ -12,6 +12,7 @@ set -e
 #   ./integration_test.sh backup       # Run only backup tests
 #   ./integration_test.sh restore      # Run only restore tests
 #   ./integration_test.sh verify       # Run only verify tests
+#   ./integration_test.sh info         # Run only info tests
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -141,6 +142,11 @@ main() {
             source "$SCRIPT_DIR/tests/test_verify.sh"
             run_verify_tests
             ;;
+        info)
+            echo -e "${YELLOW}Running info tests only...${NC}"
+            source "$SCRIPT_DIR/tests/test_info.sh"
+            run_info_tests
+            ;;
         all)
             echo -e "${YELLOW}Running basic operations tests...${NC}"
             source "$SCRIPT_DIR/tests/test_basic.sh"
@@ -165,10 +171,14 @@ main() {
             echo -e "\n${YELLOW}Running verify tests...${NC}"
             source "$SCRIPT_DIR/tests/test_verify.sh"
             run_verify_tests
+
+            echo -e "\n${YELLOW}Running info tests...${NC}"
+            source "$SCRIPT_DIR/tests/test_info.sh"
+            run_info_tests
             ;;
         *)
             echo -e "${RED}Unknown test module: $TEST_MODULE${NC}"
-            echo "Usage: $0 [all|basic|resize|password|backup|restore|verify]"
+            echo "Usage: $0 [all|basic|resize|password|backup|restore|verify|info]"
             exit 1
             ;;
     esac

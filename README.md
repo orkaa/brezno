@@ -26,6 +26,7 @@ Brezno provides similar functionality to VeraCrypt, but with a different approac
 - **Password** management - change passwords or switch to/from keyfiles
 - **Backup/Restore** LUKS headers for data recovery
 - **List** active containers with detailed information
+- **Info** - Display comprehensive container information
 - **Interactive mode** - prompts for missing parameters
 - **CLI flag mode** - fully scriptable with all parameters as flags
 - **No state files** - discovers mounted containers by querying system state
@@ -204,6 +205,24 @@ sudo brezno list
 sudo brezno list --json
 ```
 
+### Display container information
+
+```bash
+# Show comprehensive info about a container
+sudo brezno info /data/secrets.img
+
+# JSON output (for scripting)
+sudo brezno info /data/secrets.img --json
+```
+
+**Shows:**
+- File properties (size, permissions, modification time)
+- LUKS header metadata (version, UUID, cipher, key slots)
+- Mount status (if active: mapper, loop device, mount point, filesystem)
+- Disk usage (if mounted: total, used, available)
+
+**Note:** No password is required - only reads public metadata and system state.
+
 ### Backup LUKS header
 
 ```bash
@@ -302,12 +321,6 @@ brezno/
     ├── system/          # System utilities (executor, parser, cleanup)
     └── ui/              # User interface (logger, prompts, tables)
 ```
-
-## Future features
-
-Planned for future releases:
-
-- `brezno info` - Show detailed container information (LUKS version, cipher, key slots, etc.)
 
 ## Security
 

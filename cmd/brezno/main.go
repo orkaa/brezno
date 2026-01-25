@@ -69,6 +69,7 @@ func init() {
 	rootCmd.AddCommand(cli.NewMountCommand(ctx))
 	rootCmd.AddCommand(cli.NewUnmountCommand(ctx))
 	rootCmd.AddCommand(cli.NewListCommand(ctx))
+	rootCmd.AddCommand(cli.NewInfoCommand(ctx))
 	rootCmd.AddCommand(cli.NewResizeCommand(ctx))
 	rootCmd.AddCommand(cli.NewPasswordCommand(ctx))
 	rootCmd.AddCommand(cli.NewBackupCommand(ctx))
