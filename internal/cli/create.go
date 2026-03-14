@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/nace/brezno/internal/container"
 	"github.com/nace/brezno/internal/system"
@@ -114,6 +115,8 @@ func (c *CreateCommand) execute(path string, sizeBytes uint64, auth container.Au
 			c.ctx.Logger.Warning("Cleanup errors occurred: %v", err)
 		}
 	}()
+	cancelSignals := cleanup.HandleSignals(os.Interrupt, syscall.SIGTERM)
+	defer cancelSignals()
 
 	// Step 1: Create sparse file with secure permissions
 	c.ctx.Logger.Info("Creating sparse file...")
