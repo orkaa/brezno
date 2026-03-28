@@ -19,14 +19,14 @@ Brezno provides similar functionality to VeraCrypt, but with a different approac
 
 ## Features
 
-- **Create** encrypted containers with LUKS2 encryption
-- **Mount/Unmount** containers with simple commands
-- **Resize** containers to expand storage capacity (online resize)
-- **Verify** container integrity and credentials
-- **Password** management - change passwords or switch to/from keyfiles
-- **Backup/Restore** LUKS headers for data recovery
-- **List** active containers with detailed information
-- **Info** - Display comprehensive container information
+- **Create** - encrypted containers with LUKS2 encryption
+- **Mount/Unmount** - containers with simple commands
+- **Resize** - containers to expand storage capacity (online resize)
+- **Verify** - container integrity and credentials
+- **Password management** - change passwords or switch to/from keyfiles
+- **Backup/Restore** - LUKS headers for data recovery
+- **List** - active containers with detailed information
+- **Info** - display comprehensive container information
 - **Interactive mode** - prompts for missing parameters
 - **CLI flag mode** - fully scriptable with all parameters as flags
 - **No state files** - discovers mounted containers by querying system state
@@ -282,7 +282,7 @@ sudo brezno verify /data/secrets.img --full --keyfile ~/.keys/secret.key --json
 ```
 
 **What gets verified:**
-- **Header verification**: LUKS magic bytes, version, header structure, metadata integrity
+- **Header verification**: LUKS magic bytes, version, header structure, metadata integrity, key slot information
 - **Full verification** (`--full`): Tests that credentials are valid without opening the container
 
 **Note:** Header verification works on any LUKS container without authentication. Full verification requires credentials but doesn't mount or modify the container.
