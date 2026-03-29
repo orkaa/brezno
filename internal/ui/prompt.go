@@ -24,7 +24,10 @@ func GetPassword(prompt string) (*system.SecureBytes, error) {
 		password, err := term.ReadPassword(int(os.Stdin.Fd()))
 		fmt.Fprintln(os.Stderr)
 		if err != nil {
-			return nil, err
+			for i := range password {
+				password[i] = 0
+			}
+			return nil, fmt.Errorf("failed to read password: %w", err)
 		}
 		sb := system.NewSecureBytes(password)
 		if sb.Len() > maxPasswordSize {
