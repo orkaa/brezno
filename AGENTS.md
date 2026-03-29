@@ -37,14 +37,14 @@ brezno/
 RAII-style resource cleanup in LIFO order. Used in any command that allocates resources (loop devices, LUKS mappings). Pattern: create stack → `defer Execute()` → `Add()` after each allocation → `Clear()` on success. See: `internal/system/cleanup.go`, `cli/create.go`, `cli/mount.go`.
 
 ### SecureBytes
-Wraps passwords with explicit zeroing. Always `defer pwAuth.Password.Zeroize()` immediately after obtaining auth. Never convert to `string`. See: `internal/system/secure.go`.
+Wraps passwords with explicit zeroing and mlock (prevents swap). Always `defer pwAuth.Password.Zeroize()` immediately after obtaining auth. Never convert to `string`. See: `internal/system/secure.go`.
 
 ### GetAuthMethod
 Central function for password/keyfile resolution. Signature:
 ```go
-GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool, promptText string, confirmText string) (container.AuthMethod, error)
+GetAuthMethod(keyfile string, requireConfirmation bool, promptText string, confirmText string) (container.AuthMethod, error)
 ```
-Pass empty strings for `promptText`/`confirmText` to use defaults. Pass `requireConfirmation=true` for create/new-password operations.
+Pass empty strings for `promptText`/`confirmText` to use defaults. Pass `requireConfirmation=true` for create/new-password operations. Automatically detects terminal vs pipe — no `--password-stdin` flag needed.
 
 ### Command execution
 Always use `ctx.Executor` (not `exec.Command` directly) — provides verbose output and arg sanitization. Methods: `Run()`, `RunOutput()`, `RunCmd()`.
@@ -60,7 +60,7 @@ Always use `ctx.Executor` (not `exec.Command` directly) — provides verbose out
 - `blockdev` — checked in resize command
 - `mkfs.{ext4,xfs,btrfs}`, `resize2fs`, `xfs_growfs`, `btrfs` — checked per-command
 
-**Go packages**: `spf13/cobra`, `golang.org/x/term`, `fatih/color`
+**Go packages**: `spf13/cobra`, `golang.org/x/term`, `golang.org/x/sys`, `fatih/color`
 
 ## Testing
 
