@@ -43,7 +43,7 @@ setup_password_tests() {
     "$BINARY" unmount "$TEST_MOUNT" 2>&1 | grep -v "^\[" || true
 
     # Convert PASS_CONTAINER to password-based authentication for password→password tests
-    printf "%s\n%s\n" "$PASS_PASSWORD" "$PASS_PASSWORD" | "$BINARY" password "$PASS_CONTAINER" --keyfile "$PASS_INITIAL_KEYFILE" --password-stdin 2>&1 | grep -v "^\[" || true
+    printf "%s\n%s\n" "$PASS_PASSWORD" "$PASS_PASSWORD" | "$BINARY" password "$PASS_CONTAINER" --keyfile "$PASS_INITIAL_KEYFILE" 2>&1 | grep -v "^\[" || true
 }
 
 run_password_tests() {
@@ -58,12 +58,12 @@ run_password_tests() {
     print_test "Changing password from password to password"
 
     # Change password
-    printf "%s\n%s\n%s\n" "$PASS_PASSWORD" "$PASS_NEW_PASSWORD" "$PASS_NEW_PASSWORD" | "$BINARY" password "$PASS_CONTAINER" --password-stdin 2>&1 | grep -v "^\[" || true
+    printf "%s\n%s\n%s\n" "$PASS_PASSWORD" "$PASS_NEW_PASSWORD" "$PASS_NEW_PASSWORD" | "$BINARY" password "$PASS_CONTAINER" 2>&1 | grep -v "^\[" || true
 
     # Verify old password no longer works
     print_test "Verifying old password is rejected"
     set +e
-    echo "$PASS_PASSWORD" | "$BINARY" mount "$PASS_CONTAINER" "$TEST_MOUNT" --password-stdin 2>/dev/null
+    echo "$PASS_PASSWORD" | "$BINARY" mount "$PASS_CONTAINER" "$TEST_MOUNT" 2>/dev/null
     if mountpoint -q "$TEST_MOUNT"; then
         print_failure "Old password still works (password change failed)"
     else
@@ -73,7 +73,7 @@ run_password_tests() {
 
     # Verify new password works and data is intact
     print_test "Verifying new password works and data persists"
-    echo "$PASS_NEW_PASSWORD" | "$BINARY" mount "$PASS_CONTAINER" "$TEST_MOUNT" --password-stdin 2>&1 | grep -v "^\[" || true
+    echo "$PASS_NEW_PASSWORD" | "$BINARY" mount "$PASS_CONTAINER" "$TEST_MOUNT" 2>&1 | grep -v "^\[" || true
     if mountpoint -q "$TEST_MOUNT"; then
         READ_DATA=$(cat "$TEST_MOUNT/test-file.txt")
         if [ "$READ_DATA" = "$TEST_DATA" ]; then
@@ -96,12 +96,12 @@ run_password_tests() {
     chmod 600 "$PASS_TO_KEY_KEYFILE"
 
     # Change from password to keyfile
-    echo "$PASS_NEW_PASSWORD" | "$BINARY" password "$PASS_CONTAINER" --new-keyfile "$PASS_TO_KEY_KEYFILE" --password-stdin 2>&1 | grep -v "^\[" || true
+    echo "$PASS_NEW_PASSWORD" | "$BINARY" password "$PASS_CONTAINER" --new-keyfile "$PASS_TO_KEY_KEYFILE" 2>&1 | grep -v "^\[" || true
 
     # Verify password no longer works
     print_test "Verifying password is rejected after switch to keyfile"
     set +e
-    echo "$PASS_NEW_PASSWORD" | "$BINARY" mount "$PASS_CONTAINER" "$TEST_MOUNT" --password-stdin 2>/dev/null
+    echo "$PASS_NEW_PASSWORD" | "$BINARY" mount "$PASS_CONTAINER" "$TEST_MOUNT" 2>/dev/null
     if mountpoint -q "$TEST_MOUNT"; then
         print_failure "Password still works after switch to keyfile"
     else
@@ -166,7 +166,7 @@ run_password_tests() {
     KEY_TO_PASS_PASSWORD="KeyToPass789!"
 
     # Change from keyfile to password
-    printf "%s\n%s\n" "$KEY_TO_PASS_PASSWORD" "$KEY_TO_PASS_PASSWORD" | "$BINARY" password "$KEY_CONTAINER" --keyfile "$KEY_NEW_KEYFILE" --password-stdin 2>&1 | grep -v "^\[" || true
+    printf "%s\n%s\n" "$KEY_TO_PASS_PASSWORD" "$KEY_TO_PASS_PASSWORD" | "$BINARY" password "$KEY_CONTAINER" --keyfile "$KEY_NEW_KEYFILE" 2>&1 | grep -v "^\[" || true
 
     # Verify keyfile no longer works
     print_test "Verifying keyfile is rejected after switch to password"
@@ -181,7 +181,7 @@ run_password_tests() {
 
     # Verify password works and data is intact
     print_test "Verifying password works and data persists after switch"
-    echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" mount "$KEY_CONTAINER" "$TEST_MOUNT" --password-stdin 2>&1 | grep -v "^\[" || true
+    echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" mount "$KEY_CONTAINER" "$TEST_MOUNT" 2>&1 | grep -v "^\[" || true
     if mountpoint -q "$TEST_MOUNT"; then
         READ_DATA=$(cat "$TEST_MOUNT/test-file.txt")
         if [ "$READ_DATA" = "$TEST_DATA" ]; then
@@ -200,7 +200,7 @@ run_password_tests() {
     print_test "Testing wrong current password (should fail)"
 
     set +e
-    printf "%s\n%s\n%s\n" "WrongPassword123!" "NewPassword456!" "NewPassword456!" | "$BINARY" password "$KEY_CONTAINER" --password-stdin 2>/dev/null
+    printf "%s\n%s\n%s\n" "WrongPassword123!" "NewPassword456!" "NewPassword456!" | "$BINARY" password "$KEY_CONTAINER" 2>/dev/null
     WRONG_PASS_EXIT_CODE=$?
 
     if [ $WRONG_PASS_EXIT_CODE -ne 0 ]; then
@@ -220,7 +220,7 @@ run_password_tests() {
     chmod 600 "$WRONG_KEYFILE"
 
     set +e
-    printf "%s\n%s\n" "NewPassword999!" "NewPassword999!" | "$BINARY" password "$KEY_CONTAINER" --keyfile "$WRONG_KEYFILE" --password-stdin 2>/dev/null
+    printf "%s\n%s\n" "NewPassword999!" "NewPassword999!" | "$BINARY" password "$KEY_CONTAINER" --keyfile "$WRONG_KEYFILE" 2>/dev/null
     WRONG_KEY_EXIT_CODE=$?
 
     if [ $WRONG_KEY_EXIT_CODE -ne 0 ]; then
@@ -236,10 +236,10 @@ run_password_tests() {
     print_test "Testing password change on mounted container (should fail)"
 
     # Mount the container
-    echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" mount "$KEY_CONTAINER" "$TEST_MOUNT" --password-stdin 2>&1 | grep -v "^\[" || true
+    echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" mount "$KEY_CONTAINER" "$TEST_MOUNT" 2>&1 | grep -v "^\[" || true
 
     set +e
-    printf "%s\n%s\n%s\n" "$KEY_TO_PASS_PASSWORD" "ShouldNotWork123!" "ShouldNotWork123!" | "$BINARY" password "$KEY_CONTAINER" --password-stdin 2>/dev/null
+    printf "%s\n%s\n%s\n" "$KEY_TO_PASS_PASSWORD" "ShouldNotWork123!" "ShouldNotWork123!" | "$BINARY" password "$KEY_CONTAINER" 2>/dev/null
     MOUNTED_EXIT_CODE=$?
 
     if [ $MOUNTED_EXIT_CODE -ne 0 ]; then
@@ -258,7 +258,7 @@ run_password_tests() {
     print_test "Testing password change on non-existent container (should fail)"
 
     set +e
-    printf "%s\n%s\n%s\n" "password" "newpassword" "newpassword" | "$BINARY" password "$TEST_DIR/nonexistent.img" --password-stdin 2>/dev/null
+    printf "%s\n%s\n%s\n" "password" "newpassword" "newpassword" | "$BINARY" password "$TEST_DIR/nonexistent.img" 2>/dev/null
     NONEXIST_EXIT_CODE=$?
 
     if [ $NONEXIST_EXIT_CODE -ne 0 ]; then
@@ -274,7 +274,7 @@ run_password_tests() {
     print_test "Testing password mismatch detection (should fail)"
 
     set +e
-    printf "%s\n%s\n%s\n" "$KEY_TO_PASS_PASSWORD" "NewPassword111!" "DifferentPassword222!" | "$BINARY" password "$KEY_CONTAINER" --password-stdin 2>/dev/null
+    printf "%s\n%s\n%s\n" "$KEY_TO_PASS_PASSWORD" "NewPassword111!" "DifferentPassword222!" | "$BINARY" password "$KEY_CONTAINER" 2>/dev/null
     MISMATCH_EXIT_CODE=$?
 
     if [ $MISMATCH_EXIT_CODE -ne 0 ]; then
@@ -286,7 +286,7 @@ run_password_tests() {
 
     # Verify the password wasn't changed by the failed attempt
     print_test "Verifying password unchanged after failed mismatch attempt"
-    echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" mount "$KEY_CONTAINER" "$TEST_MOUNT" --password-stdin 2>&1 | grep -v "^\[" || true
+    echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" mount "$KEY_CONTAINER" "$TEST_MOUNT" 2>&1 | grep -v "^\[" || true
     if mountpoint -q "$TEST_MOUNT"; then
         print_success "Original password still works after failed change"
     else
@@ -304,7 +304,7 @@ run_password_tests() {
     chmod 600 "$TEST_KEYFILE_SECURITY"
 
     # Capture all output from password change
-    OUTPUT=$(echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" password "$KEY_CONTAINER" --new-keyfile "$TEST_KEYFILE_SECURITY" --password-stdin 2>&1)
+    OUTPUT=$(echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" password "$KEY_CONTAINER" --new-keyfile "$TEST_KEYFILE_SECURITY" 2>&1)
 
     # Check if keyfile path is NOT exposed in any output
     if echo "$OUTPUT" | grep -q "$TEST_KEYFILE_SECURITY"; then
@@ -323,7 +323,7 @@ run_password_tests() {
     print_test "Testing invalid new keyfile path (should fail)"
 
     set +e
-    echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" password "$KEY_CONTAINER" --new-keyfile "/nonexistent/path/key.file" --password-stdin 2>/dev/null
+    echo "$KEY_TO_PASS_PASSWORD" | "$BINARY" password "$KEY_CONTAINER" --new-keyfile "/nonexistent/path/key.file" 2>/dev/null
     INVALID_PATH_EXIT_CODE=$?
 
     if [ $INVALID_PATH_EXIT_CODE -ne 0 ]; then

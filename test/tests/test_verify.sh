@@ -52,7 +52,7 @@ run_verify_tests() {
     # Create a container with password for password tests
     PASSWORD_CONTAINER="$TEST_DIR/verify-password-test.img"
     print_test "Creating password-protected container for password tests"
-    printf "%s\n%s\n" "$VERIFY_PASSWORD" "$VERIFY_PASSWORD" | "$BINARY" create "$PASSWORD_CONTAINER" --size 50M --password-stdin 2>/dev/null
+    printf "%s\n%s\n" "$VERIFY_PASSWORD" "$VERIFY_PASSWORD" | "$BINARY" create "$PASSWORD_CONTAINER" --size 50M 2>/dev/null
     if [ -f "$PASSWORD_CONTAINER" ]; then
         print_success "Password-protected container created"
     else
@@ -61,7 +61,7 @@ run_verify_tests() {
 
     print_test "Full verification with password via stdin (should pass with correct password)"
     set +e
-    echo "$VERIFY_PASSWORD" | "$BINARY" verify "$PASSWORD_CONTAINER" --full --password-stdin 2>/dev/null
+    echo "$VERIFY_PASSWORD" | "$BINARY" verify "$PASSWORD_CONTAINER" --full 2>/dev/null
     RESULT=$?
     set -e
 
@@ -119,7 +119,7 @@ run_verify_tests() {
 
     print_test "Full verification with wrong password should fail"
     set +e
-    echo "wrong-password" | "$BINARY" verify "$PASSWORD_CONTAINER" --full --password-stdin 2>/dev/null
+    echo "wrong-password" | "$BINARY" verify "$PASSWORD_CONTAINER" --full 2>/dev/null
     RESULT=$?
     set -e
 
