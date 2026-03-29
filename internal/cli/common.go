@@ -47,14 +47,13 @@ func (ctx *GlobalContext) CheckDependencies() error {
 	return ctx.Executor.CheckDependencies(deps)
 }
 
-// GetAuthMethod determines the authentication method based on keyfile flag.
+// GetAuthMethod determines the authentication method based on the keyfile flag.
 // If requireConfirmation is true, prompts for password confirmation (for create operations).
-// If passwordStdin is true, reads password from stdin instead of prompting.
 // promptText and confirmText allow customizing the password prompts (empty string = use defaults).
+// Automatically detects whether stdin is a terminal or pipe — no --password-stdin flag needed.
 // Caller is responsible for calling Zeroize() on PasswordAuth.Password when done.
-func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool, promptText string, confirmText string) (container.AuthMethod, error) {
+func GetAuthMethod(keyfile string, requireConfirmation bool, promptText string, confirmText string) (container.AuthMethod, error) {
 	if keyfile != "" {
-		// Validate and resolve keyfile path
 		resolvedKeyfile, err := system.ValidateKeyfilePath(keyfile)
 		if err != nil {
 			return nil, err
@@ -62,7 +61,6 @@ func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool,
 		return &container.KeyfileAuth{KeyfilePath: resolvedKeyfile}, nil
 	}
 
-	// Use defaults if not specified
 	if promptText == "" {
 		promptText = "Enter password"
 	}
@@ -70,38 +68,16 @@ func GetAuthMethod(keyfile string, requireConfirmation bool, passwordStdin bool,
 		confirmText = "Confirm password"
 	}
 
-	var password *system.SecureBytes
-	var err error
-
-	if passwordStdin {
-		// Read password from stdin
-		password, err = ui.ReadPasswordFromStdin()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read password from stdin: %w", err)
-		}
-	} else {
-		// Prompt for password
-		password, err = ui.PromptPassword(promptText)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read password: %w", err)
-		}
+	password, err := ui.GetPassword(promptText)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read password: %w", err)
 	}
 
 	if requireConfirmation {
-		var confirmPassword *system.SecureBytes
-		if passwordStdin {
-			// Read confirmation from stdin
-			confirmPassword, err = ui.ReadPasswordFromStdin()
-			if err != nil {
-				password.Zeroize()
-				return nil, fmt.Errorf("failed to read password confirmation from stdin: %w", err)
-			}
-		} else {
-			confirmPassword, err = ui.PromptPassword(confirmText)
-			if err != nil {
-				password.Zeroize()
-				return nil, fmt.Errorf("failed to read password: %w", err)
-			}
+		confirmPassword, err := ui.GetPassword(confirmText)
+		if err != nil {
+			password.Zeroize()
+			return nil, fmt.Errorf("failed to read password: %w", err)
 		}
 		defer confirmPassword.Zeroize()
 

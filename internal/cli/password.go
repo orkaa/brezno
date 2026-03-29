@@ -14,10 +14,9 @@ import (
 
 // PasswordCommand handles changing container authentication
 type PasswordCommand struct {
-	ctx           *GlobalContext
-	keyfile       string
-	newKeyfile    string
-	passwordStdin bool
+	ctx        *GlobalContext
+	keyfile    string
+	newKeyfile string
 }
 
 // NewPasswordCommand creates a new password command
@@ -44,8 +43,6 @@ The container must be unmounted before changing credentials.`,
 		"Current keyfile path (if not set, will prompt for current password)")
 	cobraCmd.Flags().StringVar(&cmd.newKeyfile, "new-keyfile", "",
 		"New keyfile path (if not set, will prompt for new password)")
-	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false,
-		"Read passwords from stdin (for automation)")
 
 	return cobraCmd
 }
@@ -107,7 +104,7 @@ func (c *PasswordCommand) Run(cmd *cobra.Command, args []string) error {
 
 	// Get current authentication method
 	c.ctx.Logger.Info("Enter current authentication credentials:")
-	currentAuth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin, "", "")
+	currentAuth, err := GetAuthMethod(c.keyfile, false, "", "")
 	if err != nil {
 		return fmt.Errorf("failed to get current authentication: %w", err)
 	}
@@ -118,7 +115,7 @@ func (c *PasswordCommand) Run(cmd *cobra.Command, args []string) error {
 
 	// Get new authentication method
 	c.ctx.Logger.Info("Enter new authentication credentials:")
-	newAuth, err := GetAuthMethod(c.newKeyfile, true, c.passwordStdin, "Enter new password", "Confirm new password")
+	newAuth, err := GetAuthMethod(c.newKeyfile, true, "Enter new password", "Confirm new password")
 	if err != nil {
 		return fmt.Errorf("failed to get new authentication: %w", err)
 	}

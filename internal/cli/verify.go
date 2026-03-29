@@ -24,11 +24,10 @@ type VerifyResult struct {
 
 // VerifyCommand handles LUKS container verification
 type VerifyCommand struct {
-	ctx           *GlobalContext
-	full          bool
-	keyfile       string
-	passwordStdin bool
-	jsonOutput    bool
+	ctx        *GlobalContext
+	full       bool
+	keyfile    string
+	jsonOutput bool
 }
 
 // NewVerifyCommand creates the verify command
@@ -57,7 +56,6 @@ Full verification (--full) additionally:
 
 	cobraCmd.Flags().BoolVarP(&cmd.full, "full", "f", false, "Verify credentials in addition to header")
 	cobraCmd.Flags().StringVarP(&cmd.keyfile, "keyfile", "k", "", "Keyfile path for authentication (with --full)")
-	cobraCmd.Flags().BoolVar(&cmd.passwordStdin, "password-stdin", false, "Read password from stdin (with --full)")
 	cobraCmd.Flags().BoolVarP(&cmd.jsonOutput, "json", "j", false, "Output results in JSON format")
 
 	return cobraCmd
@@ -138,7 +136,7 @@ func (c *VerifyCommand) execute(containerPath string) error {
 
 	// Step 3: If --full, verify credentials
 	if c.full {
-		auth, err := GetAuthMethod(c.keyfile, false, c.passwordStdin, "", "")
+		auth, err := GetAuthMethod(c.keyfile, false, "", "")
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("failed to get credentials: %v", err))
 			return c.output(result)

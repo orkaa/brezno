@@ -187,8 +187,8 @@ sudo brezno password /data/secrets.img --keyfile ~/.keys/old.key
 # Change from one keyfile to another
 sudo brezno password /data/secrets.img --keyfile ~/.keys/old.key --new-keyfile ~/.keys/new.key
 
-# Automated password change (for scripts)
-echo -e "old_password\nnew_password\nnew_password" | sudo brezno password /data/secrets.img --password-stdin
+# Automated password change (pipe password from stdin)
+echo -e "old_password\nnew_password\nnew_password" | sudo brezno password /data/secrets.img
 ```
 
 **Requirements:**
@@ -272,7 +272,7 @@ sudo brezno verify /data/secrets.img --full --keyfile ~/.keys/secret.key
 sudo brezno verify /data/secrets.img --full
 
 # Full verification with password via stdin (for scripts)
-echo "mypassword" | sudo brezno verify /data/secrets.img --full --password-stdin
+echo "mypassword" | sudo brezno verify /data/secrets.img --full
 
 # JSON output format
 sudo brezno verify /data/secrets.img --json
