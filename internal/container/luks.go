@@ -1,8 +1,8 @@
 package container
 
 import (
-	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -31,13 +31,27 @@ type PasswordAuth struct {
 	Password *system.SecureBytes
 }
 
-// Apply applies password authentication to a command
+// Apply applies password authentication to a command.
+// Creates a pipe and writes the password directly via syscall, so no intermediate
+// userspace buffer is allocated. The exec package detects *os.File on cmd.Stdin
+// and connects it directly to the child's stdin without spawning an io.Copy goroutine.
+// Caller must close cmd.Stdin after the command completes (use closeStdinFile).
 func (a *PasswordAuth) Apply(cmd *exec.Cmd) error {
 	if a.Password == nil {
 		return fmt.Errorf("password is nil")
 	}
-	// Use bytes.NewBuffer to avoid string conversion that would leave password in memory
-	cmd.Stdin = bytes.NewBuffer(append(a.Password.Bytes(), '\n'))
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return fmt.Errorf("failed to create pipe: %w", err)
+	}
+	if _, err := pw.Write(a.Password.Bytes()); err != nil {
+		pr.Close()
+		pw.Close()
+		return fmt.Errorf("failed to write password to pipe: %w", err)
+	}
+	pw.Write([]byte{'\n'})
+	pw.Close()
+	cmd.Stdin = pr
 	return nil
 }
 
@@ -64,14 +78,22 @@ func NewLUKSManager(executor *system.Executor) *LUKSManager {
 	}
 }
 
+// closeStdinFile closes cmd.Stdin if it is an *os.File created by PasswordAuth.Apply.
+// Must be called after RunCmd returns to avoid leaking the pipe read end in the parent.
+func closeStdinFile(cmd *exec.Cmd) {
+	if f, ok := cmd.Stdin.(*os.File); ok {
+		f.Close()
+	}
+}
+
 // Format formats a device as LUKS2
 func (m *LUKSManager) Format(path string, auth AuthMethod) error {
 	cmd := exec.Command("cryptsetup", "luksFormat", "--type", "luks2", path)
 	if err := auth.Apply(cmd); err != nil {
 		return err
 	}
+	defer closeStdinFile(cmd)
 
-	// Run the command through executor for debug output and sanitization
 	_, err := m.executor.RunCmd(cmd)
 	if err != nil {
 		return fmt.Errorf("failed to format LUKS container: %w", err)
@@ -92,8 +114,8 @@ func (m *LUKSManager) Open(device, mapperName string, auth AuthMethod) error {
 	if err := auth.Apply(cmd); err != nil {
 		return err
 	}
+	defer closeStdinFile(cmd)
 
-	// Run the command through executor for debug output and sanitization
 	_, err := m.executor.RunCmd(cmd)
 	if err != nil {
 		return fmt.Errorf("failed to open LUKS container: %w", err)
@@ -118,6 +140,7 @@ func (m *LUKSManager) Resize(mapperName string, auth AuthMethod) error {
 	if err := auth.Apply(cmd); err != nil {
 		return err
 	}
+	defer closeStdinFile(cmd)
 
 	_, err := m.executor.RunCmd(cmd)
 	if err != nil {
@@ -147,6 +170,8 @@ func (m *LUKSManager) GetLUKSSize(mapperName string) (uint64, error) {
 // applyNewAuth applies new authentication method to a command.
 // This is different from AuthMethod.Apply() because cryptsetup luksChangeKey
 // uses a positional argument for the new keyfile, not a flag.
+// Only called for non-password→password transitions; password→password is
+// handled directly in ChangeKey to write both passwords to a single pipe.
 func applyNewAuth(cmd *exec.Cmd, auth AuthMethod) error {
 	switch a := auth.(type) {
 	case *KeyfileAuth:
@@ -156,29 +181,23 @@ func applyNewAuth(cmd *exec.Cmd, auth AuthMethod) error {
 		return nil
 
 	case *PasswordAuth:
+		// Reached only for keyfile→password: current auth used --key-file,
+		// so cmd.Stdin is nil and we create a fresh pipe for the new password.
 		if a.Password == nil {
 			return fmt.Errorf("password is nil")
 		}
-
-		// For new password via stdin, we need to handle stdin carefully.
-		// cryptsetup luksChangeKey reads:
-		//   1. Current password from stdin (if no --key-file)
-		//   2. New password from stdin (if no new keyfile argument)
-
-		// Check if current auth already set stdin (password→password case)
-		if cmd.Stdin != nil {
-			// Current auth already set stdin with old password
-			// We need to append new password to the existing stdin buffer
-			existingStdin, ok := cmd.Stdin.(*bytes.Buffer)
-			if !ok {
-				return fmt.Errorf("unexpected stdin type: %T", cmd.Stdin)
-			}
-			existingStdin.Write(a.Password.Bytes())
-			existingStdin.WriteByte('\n')
-		} else {
-			// Current auth is keyfile, only new password goes to stdin
-			cmd.Stdin = bytes.NewBuffer(append(a.Password.Bytes(), '\n'))
+		pr, pw, err := os.Pipe()
+		if err != nil {
+			return fmt.Errorf("failed to create pipe: %w", err)
 		}
+		if _, err := pw.Write(a.Password.Bytes()); err != nil {
+			pr.Close()
+			pw.Close()
+			return fmt.Errorf("failed to write password to pipe: %w", err)
+		}
+		pw.Write([]byte{'\n'})
+		pw.Close()
+		cmd.Stdin = pr
 		return nil
 
 	default:
@@ -214,20 +233,44 @@ func (m *LUKSManager) RestoreHeader(path, backupPath string) error {
 //   - keyfile → password
 //   - keyfile → keyfile
 func (m *LUKSManager) ChangeKey(device string, currentAuth, newAuth AuthMethod) error {
-	// Build command: cryptsetup luksChangeKey --key-slot 0 <device>
 	cmd := exec.Command("cryptsetup", "luksChangeKey", "--key-slot", "0", device)
 
-	// Apply current authentication
-	if err := currentAuth.Apply(cmd); err != nil {
-		return fmt.Errorf("failed to apply current authentication: %w", err)
+	currentPw, currentIsPassword := currentAuth.(*PasswordAuth)
+	newPw, newIsPassword := newAuth.(*PasswordAuth)
+
+	if currentIsPassword && newIsPassword {
+		// Both passwords go to stdin. Write them both to a single pipe in sequence
+		// so no intermediate userspace buffer is needed for either.
+		pr, pw, err := os.Pipe()
+		if err != nil {
+			return fmt.Errorf("failed to create pipe: %w", err)
+		}
+		if _, err := pw.Write(currentPw.Password.Bytes()); err != nil {
+			pr.Close()
+			pw.Close()
+			return fmt.Errorf("failed to write current password to pipe: %w", err)
+		}
+		pw.Write([]byte{'\n'})
+		if _, err := pw.Write(newPw.Password.Bytes()); err != nil {
+			pr.Close()
+			pw.Close()
+			return fmt.Errorf("failed to write new password to pipe: %w", err)
+		}
+		pw.Write([]byte{'\n'})
+		pw.Close()
+		cmd.Stdin = pr
+		defer pr.Close()
+	} else {
+		// All other transitions: password→keyfile, keyfile→password, keyfile→keyfile
+		if err := currentAuth.Apply(cmd); err != nil {
+			return fmt.Errorf("failed to apply current authentication: %w", err)
+		}
+		defer closeStdinFile(cmd)
+		if err := applyNewAuth(cmd, newAuth); err != nil {
+			return fmt.Errorf("failed to apply new authentication: %w", err)
+		}
 	}
 
-	// Apply new authentication
-	if err := applyNewAuth(cmd, newAuth); err != nil {
-		return fmt.Errorf("failed to apply new authentication: %w", err)
-	}
-
-	// Execute through executor for debug output and sanitization
 	_, err := m.executor.RunCmd(cmd)
 	if err != nil {
 		return fmt.Errorf("cryptsetup luksChangeKey failed: %w", err)
@@ -314,6 +357,7 @@ func (m *LUKSManager) TestPassphrase(path string, auth AuthMethod) error {
 	if err := auth.Apply(cmd); err != nil {
 		return err
 	}
+	defer closeStdinFile(cmd)
 
 	_, err := m.executor.RunCmd(cmd)
 	if err != nil {
