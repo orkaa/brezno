@@ -49,7 +49,11 @@ func (a *PasswordAuth) Apply(cmd *exec.Cmd) error {
 		pw.Close()
 		return fmt.Errorf("failed to write password to pipe: %w", err)
 	}
-	pw.Write([]byte{'\n'})
+	if _, err := pw.Write([]byte{'\n'}); err != nil {
+		pr.Close()
+		pw.Close()
+		return fmt.Errorf("failed to write newline to pipe: %w", err)
+	}
 	pw.Close()
 	cmd.Stdin = pr
 	return nil
@@ -195,7 +199,11 @@ func applyNewAuth(cmd *exec.Cmd, auth AuthMethod) error {
 			pw.Close()
 			return fmt.Errorf("failed to write password to pipe: %w", err)
 		}
-		pw.Write([]byte{'\n'})
+		if _, err := pw.Write([]byte{'\n'}); err != nil {
+			pr.Close()
+			pw.Close()
+			return fmt.Errorf("failed to write newline to pipe: %w", err)
+		}
 		pw.Close()
 		cmd.Stdin = pr
 		return nil
@@ -250,13 +258,21 @@ func (m *LUKSManager) ChangeKey(device string, currentAuth, newAuth AuthMethod) 
 			pw.Close()
 			return fmt.Errorf("failed to write current password to pipe: %w", err)
 		}
-		pw.Write([]byte{'\n'})
+		if _, err := pw.Write([]byte{'\n'}); err != nil {
+			pr.Close()
+			pw.Close()
+			return fmt.Errorf("failed to write newline to pipe: %w", err)
+		}
 		if _, err := pw.Write(newPw.Password.Bytes()); err != nil {
 			pr.Close()
 			pw.Close()
 			return fmt.Errorf("failed to write new password to pipe: %w", err)
 		}
-		pw.Write([]byte{'\n'})
+		if _, err := pw.Write([]byte{'\n'}); err != nil {
+			pr.Close()
+			pw.Close()
+			return fmt.Errorf("failed to write newline to pipe: %w", err)
+		}
 		pw.Close()
 		cmd.Stdin = pr
 		defer pr.Close()
